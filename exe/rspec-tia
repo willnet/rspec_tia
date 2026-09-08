@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require 'rspec_tia/cli'
+
+exit RspecTia::Cli.start(ARGV)
