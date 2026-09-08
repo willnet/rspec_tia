@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
     変更されたファイルに影響するspecだけを選び出す。
   DESC
   spec.license = 'MIT'
-  spec.required_ruby_version = '>= 3.1.0'
+  spec.required_ruby_version = '>= 3.3.0'
 
   spec.files = Dir['lib/**/*.rb', 'exe/*', 'README.md', 'LICENSE.txt']
   spec.bindir = 'exe'

@@ -12,7 +12,7 @@ module RspecTia
   # ActiveRecord の通知から「そのspecが触ったモデル」を拾い、
   # Module.const_source_location で定義ファイルに変換して依存に足す。
   #
-  # バトンズ本体での実測では、この補完によって依存エッジが 402 -> 594（+48%）に増えた。
+  # 実Railsアプリケーションの実測では、この補完によって依存エッジが 402 -> 594（+48%）に増えた。
   # 補完がないと約1/3の依存を取りこぼす。
   class RailsSupport
     # payload[:name] は "User Load" / "User Create" のような形式。
