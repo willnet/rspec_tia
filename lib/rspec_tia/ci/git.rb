@@ -6,6 +6,8 @@ module RspecTia
     # git だけで完結する汎用アダプタ。
     # クローンが浅いと共通祖先が手元に無く差分が取れないため、CI では専用アダプタを優先する。
     class Git < Base
+      class CommandError < StandardError; end
+
       DEFAULT_BASE = 'origin/master'.freeze
 
       def self.available?
@@ -18,7 +20,7 @@ module RspecTia
 
       def changed_files
         output = capture('git', 'diff', '--name-only', "#{base}...HEAD")
-        output.to_s.split("\n").map(&:strip).reject(&:empty?)
+        output.split("\n").map(&:strip).reject(&:empty?)
       end
 
       def commit_message
@@ -34,8 +36,7 @@ module RspecTia
       def capture(*command)
         stdout, stderr, status = Open3.capture3(*command, chdir: @config.root)
         unless status.success?
-          warn "[rspec_tia] #{command.join(' ')} に失敗しました: #{stderr.strip}"
-          return nil
+          raise CommandError, "#{command.join(' ')} に失敗しました: #{stderr.strip}"
         end
 
         stdout
