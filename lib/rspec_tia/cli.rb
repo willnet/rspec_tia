@@ -108,6 +108,8 @@ module RspecTia
       dest = @options[:dest] || config.map_fragment_dir
       fragments = Ci.build(config).fetch_map_fragments(dest)
       if fragments.empty?
+        # 再利用されたワークスペースのマップでも、宣言どおり全実行に倒す。
+        File.delete(config.map_path) if File.exist?(config.map_path)
         warn '[rspec_tia] 断片を取得できませんでした（予測は全実行にフォールバックします）'
         return 0
       end
