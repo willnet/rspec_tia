@@ -103,12 +103,23 @@ bundle exec rspec-tia map merge
 
 ### 実行すべきspecを選ぶ
 
+次は、プロジェクトルートで実行するBashのCIスクリプト例。予測が正常に0件ならRSpecを起動せず終了し、予測に失敗した場合はジョブも失敗させる。
+
 ```bash
-bundle exec rspec-tia select > specs.txt
-bundle exec rspec $(cat specs.txt)
+#!/usr/bin/env bash
+bundle exec rspec-tia select > specs.txt || exit "$?"
+[ -s specs.txt ] || exit 0
+
+specs=()
+while IFS= read -r spec; do
+  specs+=("$spec")
+done < specs.txt
+bundle exec rspec "${specs[@]}"
 ```
 
-全実行と判定した場合は `full_run_token`（既定 `spec`）が1行だけ出る。
+出力の1行を1引数として渡すため、パス内の空白・バックスラッシュ・ワイルドカード文字をシェルが分割・展開しない。改行を含むファイル名には対応しない。
+
+全実行と判定した場合は `full_run_token`（既定 `spec`）が1行だけ出る。この例ではそれも1引数としてRSpecに渡す。カスタム値には、全対象を含むディレクトリ等、RSpecが1引数で受け取れる値を設定する。外部の分割スクリプト専用のトークンを使う場合は、そのスクリプト側で全実行へ変換する。
 
 CIから差分を取らず、手元のファイル一覧で試すこともできる。過去のマージコミットを流して削減率と取りこぼしを事前に測るときに使う。
 
