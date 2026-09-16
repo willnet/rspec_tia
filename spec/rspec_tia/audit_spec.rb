@@ -1,7 +1,7 @@
 RSpec.describe RspecTia::Audit do
   # 全実行で落ちたspecを表す最小のダブル
   def report(failed)
-    instance_double(RspecTia::JunitReport, failed_files: Set.new(failed))
+    instance_double(RspecTia::JunitReport, failed_files: Set.new(failed), validation_errors: [])
   end
 
   it '失敗specがすべて予測に含まれていれば取りこぼしなし' do
