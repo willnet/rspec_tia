@@ -5,7 +5,13 @@ RSpec.describe 'shared examplesの依存マップ' do
   it '各利用元へ依存を記録し、予測したパスから実際のexampleを実行できる' do
     Dir.mktmpdir do |root|
       files = {
-        'lib/value.rb' => "module Value; def self.call; 42; end; end",
+        'lib/value.rb' => <<~RUBY,
+          module Value
+            def self.call
+              42
+            end
+          end
+        RUBY
         'spec/support/shared.rb' => <<~RUBY,
           RSpec.shared_examples('value') do
             it('shared value') { expect(Value.call).to eq(42) }
