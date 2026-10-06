@@ -107,6 +107,8 @@ bundle exec rspec-tia map merge
 
 `map_artifact_glob`はプロジェクトルートからの相対ディレクトリ、glob、または断片ファイルの相対パスを指定できる。`RSPEC_TIA_FRAGMENT_PATH`で出力を変更した場合は、そのファイルをartifactに含め、`map_artifact_glob`も合わせる。artifactの404や通信失敗は取得失敗とする。
 
+取得先は単一の`map_job_name`、またはGitLabの数値並列ジョブ名`name index/total`をサポートする。全ノードの成功・連番・断片の存在/形式/鮮度/コミットを検証し、揃わなければ`map fetch`は非ゼロ終了して既存の統合マップを維持する。`parallel:matrix`等の別形式はサポートせずエラーにする。各成功ジョブのartifactには全プロセスの断片を保存し、RSpecやartifact保存の失敗をCIスクリプトで握りつぶさないこと。過去の断片が混入しないよう、マップ生成前に断片ディレクトリを空にする。
+
 ### 実行すべきspecを選ぶ
 
 次は、プロジェクトルートで実行するBashのCIスクリプト例。予測が正常に0件ならRSpecを起動せず終了し、予測に失敗した場合はジョブも失敗させる。
