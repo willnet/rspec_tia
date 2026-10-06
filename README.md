@@ -20,6 +20,7 @@ RSpec向けの Test Impact Analysis。コードカバレッジからspecファ�
 
 - **`oneshot_lines` は使わない。** clear しても一度記録された行が再記録されず、最初にその行を通ったspecが依存を専有してマップが壊れる。`lines: true` を使う。
 - **粒度はspecファイル単位。** example単位にすると呼び出し回数が2桁増える。specファイル単位なら実測で 25〜31ms × specファイル数に収まる（1,966 spec のRailsアプリで合計53秒）。
+- **context hookもspecへ帰属させる。** group開始・終了通知で `before/after(:context)`（`:all`を含む）を記録する。`before/after(:suite)` の依存は全specへ追加する。テストやhookに失敗した実行のマップは古い生成時刻で保存し、予測では全実行へ倒す。
 - **eager_load 対策として、suite開始時に1回 clear する。** eager_load が有効だとboot時点で全クラス定義行が実行済みになるため、これを捨てないと全specが全ファイルに依存してしまう。
 - **ActiveRecord の通知でモデルを補完する。** 次のようなクラスはロード後に実行される行がなく、カバレッジには決して現れない。
 
