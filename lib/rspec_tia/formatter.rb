@@ -59,7 +59,8 @@ module RspecTia
     end
 
     def spec_path_of(example)
-      metadata = example.metadata
+      # shared examples の定義位置ではなく、実行可能な最上位groupのspecを使う。
+      metadata = example.example_group.parent_groups.last.metadata
       metadata[:absolute_file_path] || metadata[:file_path]
     end
 
