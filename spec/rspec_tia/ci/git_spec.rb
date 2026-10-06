@@ -65,4 +65,36 @@ RSpec.describe RspecTia::Ci::Git do
       end
     end
   end
+  [false, true].each do |modify|
+    it "リネーム前後の依存を選択する（内容変更: #{modify}）" do
+      with_repository do |root, config, map|
+        File.write(File.join(root, 'lib/a.rb'), (1..20).map { |n| "# line #{n}\n" }.join)
+        git(root, 'add', 'lib/a.rb')
+        git(root, 'commit', '-qm', 'Source with rename similarity')
+        git(root, 'branch', '-f', 'base')
+        git(root, 'mv', 'lib/a.rb', 'lib/new.rb')
+        File.open(File.join(root, 'lib/new.rb'), 'a') { |f| f.puts('# changed') } if modify
+        git(root, 'commit', '-am', 'Rename source')
+        context = described_class.new(config).context
+        expect(context.changed_files).to contain_exactly('lib/a.rb', 'lib/new.rb')
+        result = RspecTia::Predictor.new(config: config, map: map).call(context)
+        expect(result).not_to be_full_run
+        expect(result.specs).to eq(['spec/a_spec.rb'])
+      end
+    end
+  end
+
+  it '追加・削除・通常変更と空白や改行を含むパスを保持する' do
+    with_repository do |root, config, _map|
+      paths = ["lib/ space.rb ", "lib/line\nbreak.rb", "lib/tab\tname.rb"]
+      paths.each { |path| File.write(File.join(root, path), '# new') }
+      File.write(File.join(root, 'lib/a.rb'), '# modified')
+      File.delete(File.join(root, 'spec/a_spec.rb'))
+      git(root, 'add', '-A', '--', 'lib', 'spec')
+      git(root, 'commit', '-qm', 'Mixed changes')
+      expect(described_class.new(config).changed_files)
+        .to contain_exactly(*paths, 'lib/a.rb', 'spec/a_spec.rb')
+    end
+  end
+
 end

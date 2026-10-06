@@ -19,8 +19,8 @@ module RspecTia
       end
 
       def changed_files
-        output = capture('git', 'diff', '--name-only', "#{base}...HEAD")
-        output.split("\n").map(&:strip).reject(&:empty?)
+        output = capture('git', 'diff', '--name-only', '--no-renames', '-z', "#{base}...HEAD")
+        output.split("\0")
       end
 
       def commit_message
