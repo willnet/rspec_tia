@@ -1,4 +1,6 @@
 require 'fileutils'
+require 'stringio'
+require 'zip'
 require 'rspec_tia/http'
 require 'rspec_tia/ci/base'
 
@@ -11,8 +13,6 @@ module RspecTia
     # MRのdiffはAPIから取る。
     class Gitlab < Base
       PER_PAGE = 100
-      # parallel_tests のプロセス数は取得側から分からないため、404 になるまで順に試す
-      MAX_TEST_PROCESSES = 8
 
       def self.available?
         !ENV['CI_API_V4_URL'].to_s.empty? && !ENV['CI_PROJECT_ID'].to_s.empty?
@@ -119,39 +119,31 @@ module RspecTia
         name == expected || name.start_with?("#{expected} ")
       end
 
+      # 命名規則やプロセス数を推測せず、job artifactの一覧を使う。
       def download_fragments(job, dest_dir)
-        node = parallel_index(job['name'])
+        archive = http.get("/projects/#{project_id}/jobs/#{job['id']}/artifacts")
         saved = []
-
-        (1..MAX_TEST_PROCESSES).each do |process|
-          artifact = File.join(fragment_dir_in_artifact, "map-#{node}-#{process}.json.gz")
-          output = File.join(dest_dir, "job_#{job['id']}_map-#{node}-#{process}.json.gz")
-          begin
-            File.binwrite(output, http.get(artifact_path(job['id'], artifact)))
-            saved << output
-          rescue Http::NotFound
-            # プロセス数を超えたファイル名は必ず404になる。そこで当該ジョブの取得を打ち切る
-            break
-          rescue Http::Error => e
-            # 一時的な失敗では後続プロセス分が取れる可能性があるため、次を試す
-            warn "[rspec_tia] skip #{job['name']} #{artifact}: #{e.message}"
+        Zip::File.open_buffer(StringIO.new(archive)) do |zip|
+          saved = zip.entries.reject(&:directory?).select { |entry| fragment_entry?(entry.name) }.sort_by(&:name)
+             .each_with_index.map do |entry, index|
+            # artifact内のパスは出力先に使わず、重複名やパストラバーサルを避ける。
+            output = File.join(dest_dir, "job_#{job['id']}_#{index}_#{File.basename(entry.name)}")
+            File.binwrite(output, zip.get_input_stream(entry).read)
+            output
           end
         end
         saved
+      rescue Http::Error, Zip::Error => e
+        raise Map::FormatError, "#{job['name']}のartifactを取得できません: #{e.message}"
       end
 
-      def artifact_path(job_id, artifact)
-        "/projects/#{project_id}/jobs/#{job_id}/artifacts/#{artifact}"
-      end
-
-      # artifact 内のパスは、生成側の map.fragment_dir とプロジェクトルートからの相対で一致する
-      def fragment_dir_in_artifact
-        options['map_artifact_glob'] || @config.map_fragment_dir
-      end
-
-      def parallel_index(job_name)
-        match = job_name.match(%r{ (\d+)/\d+\z})
-        match ? match[1] : '1'
+      def fragment_entry?(name)
+        pattern = options['map_artifact_glob']
+        if pattern.to_s.empty?
+          pattern = @config.map_fragment_dir.delete_prefix("#{@config.root}/")
+        end
+        pattern = "#{pattern.chomp('/')}/**/*.json*" unless pattern.match?(/[\*?\[]/) || pattern.end_with?('.json', '.json.gz')
+        File.fnmatch?(pattern, name, Configuration::FNMATCH_FLAGS)
       end
     end
   end

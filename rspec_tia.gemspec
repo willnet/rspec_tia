@@ -17,6 +17,7 @@ Gem::Specification.new do |spec|
   spec.executables = %w(rspec-tia)
   spec.require_paths = %w(lib)
 
+  spec.add_dependency 'rubyzip', '~> 3.0'
   spec.add_dependency 'rexml', '~> 3.2'
   spec.add_dependency 'rspec-core', '~> 3.9'
 

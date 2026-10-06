@@ -101,6 +101,12 @@ RUBYOPT="-rrspec_tia/boot" bundle exec rspec \
 bundle exec rspec-tia map merge
 ```
 
+### GitLabのマップartifact
+
+`ci.gitlab.map_job_name`にはマップ生成ジョブ名を設定し、各ジョブで`map.fragment_dir`全体をartifactに保存する。取得側はjob artifactのZIPを読み、`ci.gitlab.map_artifact_glob`（既定`tmp/rspec_tia/fragments`）配下の`.json`/`.json.gz`断片を列挙する。ファイル名やプロセス数を推測しないため、単一プロセス、CIノード並列、`TEST_ENV_NUMBER`並列、CIノード未設定時のPID形式を扱える。
+
+`map_artifact_glob`はプロジェクトルートからの相対ディレクトリ、glob、または断片ファイルの相対パスを指定できる。`RSPEC_TIA_FRAGMENT_PATH`で出力を変更した場合は、そのファイルをartifactに含め、`map_artifact_glob`も合わせる。artifactの404や通信失敗は取得失敗とする。
+
 ### 実行すべきspecを選ぶ
 
 次は、プロジェクトルートで実行するBashのCIスクリプト例。予測が正常に0件ならRSpecを起動せず終了し、予測に失敗した場合はジョブも失敗させる。

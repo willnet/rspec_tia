@@ -1,3 +1,5 @@
+require 'zip'
+
 RSpec.describe RspecTia::Ci::Gitlab do
   subject(:adapter) { described_class.new(config) }
 
@@ -89,7 +91,7 @@ RSpec.describe RspecTia::Ci::Gitlab do
       )
     end
 
-    it '対象ジョブの断片だけを、404になるまでプロセス順にダウンロードする' do
+    it '対象ジョブのartifactアーカイブに含まれる断片を取得する' do
       with_env('CI_PROJECT_ID' => '42') do
         allow(http).to receive(:get_json)
           .with(a_string_including('/pipelines?ref=master')).and_return([pipeline])
@@ -102,20 +104,21 @@ RSpec.describe RspecTia::Ci::Gitlab do
             [],
           )
 
-        # ノード3のプロセス1・2は存在し、3で404 → そこで打ち切る
-        allow(http).to receive(:get)
-          .with('/projects/42/jobs/1/artifacts/tmp/rspec_tia/fragments/map-3-1.json.gz').and_return('a')
-        allow(http).to receive(:get)
-          .with('/projects/42/jobs/1/artifacts/tmp/rspec_tia/fragments/map-3-2.json.gz').and_return('b')
-        allow(http).to receive(:get)
-          .with('/projects/42/jobs/1/artifacts/tmp/rspec_tia/fragments/map-3-3.json.gz')
-          .and_raise(RspecTia::Http::NotFound)
+        archive = Zip::OutputStream.write_buffer do |zip|
+          %w(map-3-1.json.gz map-3-2.json.gz).each do |name|
+            zip.put_next_entry("tmp/rspec_tia/fragments/#{name}")
+            zip.write(name)
+          end
+          zip.put_next_entry('other/report.xml')
+          zip.write('<testsuite/>')
+        end.string
+        allow(http).to receive(:get).with('/projects/42/jobs/1/artifacts').and_return(archive)
 
         Dir.mktmpdir do |dir|
           saved = adapter.fetch_map_fragments(dir)
 
           expect(saved.map { |path| File.basename(path) })
-            .to eq %w(job_1_map-3-1.json.gz job_1_map-3-2.json.gz)
+            .to eq %w(job_1_0_map-3-1.json.gz job_1_1_map-3-2.json.gz)
           # 対象外のジョブにはリクエストしない
           expect(http).not_to have_received(:get).with(a_string_including('/jobs/2/'))
         end
