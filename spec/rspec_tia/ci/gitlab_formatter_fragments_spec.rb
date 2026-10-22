@@ -52,4 +52,28 @@ RSpec.describe 'Formatterの断片をGitLabから取得する' do
       end
     end
   end
+  ['tmp/rspec_tia/fragments', 'tmp/rspec_tia/fragments/**/*',
+   'tmp/rspec_tia/fragments/{map-3.json.gz,map-4.json}'].each do |pattern|
+    it "#{pattern}からJSON断片だけを取得してマージする" do
+      Dir.mktmpdir do |root|
+        fragment = RspecTia::Map.new.add('spec/a_spec.rb', ['lib/a.rb']).to_h
+        archive = Zip::OutputStream.write_buffer do |zip|
+          %w(map-3.json.gz map-4.json map-3.json.gz.sha256 map-3.json.log report.xml).each do |name|
+            zip.put_next_entry("tmp/rspec_tia/fragments/#{name}")
+            zip.write(name.end_with?('.json', '.json.gz') ? JSON.generate(fragment) : 'sidecar')
+          end
+        end.string
+        config = RspecTia::Configuration.new({ 'ci' => { 'gitlab' => { 'map_artifact_glob' => pattern } } }, root: root)
+        adapter = RspecTia::Ci::Gitlab.new(config)
+        allow(adapter).to receive(:project_id).and_return('42')
+        http = instance_double(RspecTia::Http)
+        allow(adapter).to receive(:http).and_return(http)
+        expect(http).to receive(:get).with('/projects/42/jobs/1/artifacts').and_return(archive)
+        saved = adapter.send(:download_fragments, { 'id' => 1, 'name' => 'map' }, root)
+        expect(saved.map { |path| File.basename(path) }).to eq(%w(job_1_0_map-3.json.gz job_1_1_map-4.json))
+        expect(RspecTia::Map.merge_files(saved).specs_for('lib/a.rb')).to contain_exactly('spec/a_spec.rb')
+      end
+    end
+  end
+
 end
