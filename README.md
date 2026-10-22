@@ -84,6 +84,14 @@ ci:
 
 パスのパターンは `File.fnmatch?(FNM_PATHNAME | FNM_EXTGLOB)` で判定する。GitLab CI の `rules:changes` と同じ記法なので `config/**/*` のように書く（`config/**` はネストしたパスにマッチしない）。
 
+### GitLab CIの認証
+
+GitLabアダプタはGitLab 17以降のAPI v4を対象とし、MR差分・pipeline/job一覧・artifact取得に`PRIVATE-TOKEN`認証を使う。`read_api`スコープのpersonal access token（または同等のproject/group access token）を`RSPEC_TIA_GITLAB_TOKEN`に設定する。トークンの主体には対象プロジェクトのコード・MR・CI artifactを読める権限（通常Reporter以上）が必要。同一プロジェクトでも追加トークンが必要で、deploy tokenには対応しない。
+
+通常の`CI_JOB_TOKEN`の[対応API一覧](https://docs.gitlab.com/ci/jobs/ci_job_token/#job-token-access)にはMRの`/diffs`・pipeline/job一覧が含まれない。artifactをダウンロードできても、差分や取得元の検索を行えるとは限らない。アダプタはAPI tokenが未設定なら通信前にエラーを返し、401/403/404等も終了コード1にする。正常な変更ゼロ件へ変換しない。
+
+トークンはGitLabのmasked CI/CD変数に登録する。protected変数を使う場合、利用するMRパイプラインでその変数が提供される設定も確認する。環境変数が提供されないMRでは選択処理が失敗する。[必要なスコープ](https://docs.gitlab.com/user/profile/personal_access_tokens/#personal-access-token-scopes)と[MR差分API](https://docs.gitlab.com/api/merge_requests/#list-merge-request-diffs)も参照。
+
 ## 使い方
 
 ### マップを生成する
