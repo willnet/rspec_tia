@@ -126,4 +126,28 @@ RSpec.describe 'GitLabマップ取得の完全性' do
     allow(@http).to receive(:get).with('/projects/42/jobs/1/artifacts').and_return('truncated ZIP')
     expect_failure
   end
+  [
+    { 'edges' => [[1]] },
+    { 'edges' => [[-1]] },
+    { 'edges' => [[nil]] },
+    { 'edges' => [[0.0]] },
+    { 'edges' => [0] },
+    { 'edges' => [] },
+    { 'edges' => nil },
+    { 'sources' => ['lib/1.rb', 'lib/1.rb'], 'edges' => [[0], []] },
+    { 'sources' => [nil] },
+    { 'sources' => {} },
+    { 'specs' => ['spec/1_spec.rb', 'spec/1_spec.rb'] },
+    { 'specs' => [nil] },
+    { 'specs' => {} },
+  ].each do |invalid_graph|
+    it "不正なグラフ#{invalid_graph.inspect}を公開せず既存マップを維持する" do
+      jobs
+      invalid = JSON.generate(JSON.parse(map_json).merge(invalid_graph))
+      allow(@http).to receive(:get).with('/projects/42/jobs/1/artifacts')
+        .and_return(archive('map-1.json.gz' => map_json, 'map-2.json.gz' => invalid))
+      expect_failure
+    end
+  end
+
 end
