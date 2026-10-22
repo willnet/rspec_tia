@@ -23,9 +23,10 @@ module RspecTia
       end
     end
 
-    def initialize(junit_report:, predicted_specs:)
+    def initialize(junit_report:, predicted_specs:, full_run: false)
       @junit_report = junit_report
       @predicted_specs = Set.new(predicted_specs)
+      @full_run = full_run
     end
 
     def call
@@ -33,7 +34,7 @@ module RspecTia
       Result.new(
         failed_specs: failed,
         predicted_specs: @predicted_specs,
-        missed_specs: failed - @predicted_specs,
+        missed_specs: @full_run ? Set.new : failed - @predicted_specs,
         validation_errors: @junit_report.validation_errors,
       )
     end

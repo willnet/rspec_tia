@@ -142,7 +142,11 @@ module RspecTia
       end
 
       predicted = File.readlines(@options[:predicted], chomp: true).reject(&:empty?)
-      result = Audit.new(junit_report: JunitReport.load_dir(@options[:junit]), predicted_specs: predicted).call
+      result = Audit.new(
+        junit_report: JunitReport.load_dir(@options[:junit]),
+        predicted_specs: predicted,
+        full_run: predicted == [config.full_run_token],
+      ).call
       warn result.summary
       result.ok? ? 0 : 1
     end
