@@ -20,7 +20,7 @@ module RspecTia
   # 粒度がspecファイル単位なのは、example単位にすると呼び出し回数が2桁増えるため。
   # specファイル単位なら実測で 25〜31ms × specファイル数に収まる。
   class Formatter
-    RSpec::Core::Formatters.register self, :start, :example_started, :stop
+    RSpec::Core::Formatters.register self, :start, :example_group_started, :example_group_finished, :example_started, :stop
 
     def initialize(_output)
       @config = RspecTia.config
@@ -36,16 +36,30 @@ module RspecTia
       @rails_support&.flush
     end
 
-    def example_started(notification)
-      spec = relative(spec_path_of(notification.example))
-      return if spec == @current_spec
-
-      flush
-      @current_spec = spec
+    # group開始通知はbefore(:context)より先、終了通知はafter(:context)より後に届く。
+    def example_group_started(notification)
+      switch_spec(relative(group_spec_path(notification.group)))
     end
 
-    def stop(_notification)
+    def example_group_finished(notification)
+      return unless notification.group.parent_groups.size == 1
+
       flush
+      @current_spec = nil
+    end
+
+    def example_started(notification)
+      switch_spec(relative(spec_path_of(notification.example)))
+    end
+
+    def stop(notification)
+      flush
+      @map.specs.each { |spec| @map.add(spec, (@suite_sources || []).to_a) }
+      if notification.failed_examples.any? || RSpec.world.non_example_failure
+        # 失敗したhook・fail-fast等で未実行の経路を含むマップは鮮度判定を通さない。
+        @map.load_hash(@map.to_h.merge('generated_at' => Time.at(0).utc.iso8601))
+        warn '[rspec_tia] テスト実行に失敗したため、生成マップを無効な鮮度で保存します'
+      end
       @map.dump(fragment_path)
     end
 
@@ -58,9 +72,20 @@ module RspecTia
       RailsSupport.new(root: @root).subscribe
     end
 
+    def switch_spec(spec)
+      return if spec == @current_spec
+
+      flush
+      @current_spec = spec
+    end
+
     def spec_path_of(example)
+      group_spec_path(example.example_group)
+    end
+
+    def group_spec_path(group)
       # shared examples の定義位置ではなく、実行可能な最上位groupのspecを使う。
-      metadata = example.example_group.parent_groups.last.metadata
+      metadata = group.parent_groups.last.metadata
       metadata[:absolute_file_path] || metadata[:file_path]
     end
 
@@ -72,9 +97,13 @@ module RspecTia
     def flush
       result = Coverage.result(stop: false, clear: true)
       touched = @rails_support ? @rails_support.flush : []
-      return if @current_spec.nil?
-
-      @map.add(@current_spec, project_files(result) + touched)
+      sources = project_files(result) + touched
+      if @current_spec.nil?
+        # before/after(:suite)の依存は最初・最後のspecへ偏らせず全specへ付ける。
+        (@suite_sources ||= Set.new).merge(sources)
+      else
+        @map.add(@current_spec, sources)
+      end
     end
 
     def project_files(result)
