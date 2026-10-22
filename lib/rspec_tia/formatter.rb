@@ -27,10 +27,11 @@ module RspecTia
       @root = @config.root.end_with?('/') ? @config.root : "#{@config.root}/"
       @map = Map.new(generated_at: Time.now, commit_sha: RspecTia.commit_sha)
       @current_spec = nil
-      @rails_support = build_rails_support
+      @rails_support = nil
     end
 
     def start(_notification)
+      @rails_support ||= build_rails_support
       # boot（とspecファイルのロード）で実行された行を捨てる
       Coverage.result(stop: false, clear: true)
       @rails_support&.flush
