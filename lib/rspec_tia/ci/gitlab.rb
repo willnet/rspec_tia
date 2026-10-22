@@ -182,11 +182,13 @@ module RspecTia
       end
 
       def fragment_entry?(name)
+        return false unless name.end_with?('.json', '.json.gz')
+
         pattern = options['map_artifact_glob']
         if pattern.to_s.empty?
           pattern = @config.map_fragment_dir.delete_prefix("#{@config.root}/")
         end
-        pattern = "#{pattern.chomp('/')}/**/*.json*" unless pattern.match?(/[\*?\[]/) || pattern.end_with?('.json', '.json.gz')
+        pattern = "#{pattern.chomp('/')}/**/*.json*" unless pattern.match?(/[\*?\[{]/) || pattern.end_with?('.json', '.json.gz')
         File.fnmatch?(pattern, name, Configuration::FNMATCH_FLAGS)
       end
     end
