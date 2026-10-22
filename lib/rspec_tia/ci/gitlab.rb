@@ -12,6 +12,8 @@ module RspecTia
     # ターゲットブランチとの共通祖先が手元に無く `git diff origin/master...HEAD` が使えないため。
     # MRのdiffはAPIから取る。
     class Gitlab < Base
+      class AuthenticationError < StandardError; end
+
       PER_PAGE = 100
 
       def self.available?
@@ -72,13 +74,15 @@ module RspecTia
         )
       end
 
-      # CI_JOB_TOKEN は同一プロジェクトの artifact 取得に使える。
-      # 別プロジェクトから引く場合のために PRIVATE-TOKEN も受け付ける
+      # MR差分・pipeline/job一覧には通常のCI_JOB_TOKENでは足りない。
       def auth_header
         token = ENV['RSPEC_TIA_GITLAB_TOKEN']
-        return { 'PRIVATE-TOKEN' => token } unless token.to_s.empty?
+        if token.to_s.empty?
+          raise AuthenticationError,
+                'GitLab APIにはRSPEC_TIA_GITLAB_TOKEN（read_api権限）が必要です。CI_JOB_TOKENだけではMR差分・マップ検索に対応しません'
+        end
 
-        { 'JOB-TOKEN' => ENV.fetch('CI_JOB_TOKEN') }
+        { 'PRIVATE-TOKEN' => token }
       end
 
       def each_page(path)
