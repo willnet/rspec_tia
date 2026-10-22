@@ -136,9 +136,6 @@ module RspecTia
           rescue Http::NotFound
             # プロセス数を超えたファイル名は必ず404になる。そこで当該ジョブの取得を打ち切る
             break
-          rescue Http::Error => e
-            # 一時的な失敗では後続プロセス分が取れる可能性があるため、次を試す
-            warn "[rspec_tia] skip #{job['name']} #{artifact}: #{e.message}"
           end
         end
         saved

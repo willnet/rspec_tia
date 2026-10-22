@@ -9,7 +9,7 @@ RSpec.describe 'GitLab API認証' do
     values.each { |key, value| ENV[key] = value }
     with_project(['spec/a_spec.rb']) do |root|
       @root = root
-      File.write(File.join(root, '.rspec_tia.yml'), "ci:\n  adapter: gitlab\n")
+      File.write(File.join(root, '.rspec_tia.yml'), "ci:\n  adapter: gitlab\n  gitlab:\n    map_job_name: rails_spec_tia_map\n")
       example.run
     end
   ensure
@@ -65,4 +65,30 @@ RSpec.describe 'GitLab API認証' do
       expect(diagnostic).not_to include('secret-api-token', 'secret-job-token')
     end
   end
+  [Net::HTTPUnauthorized, Net::HTTPForbidden].each do |response_class|
+    it "artifactの#{response_class}を空の結果にせず既存マップを維持する" do
+      config = RspecTia::Configuration.load(root: @root)
+      RspecTia::Map.new.add('spec/a_spec.rb', ['lib/a.rb']).dump(config.map_path)
+      original = File.binread(config.map_path)
+      connection = instance_double(Net::HTTP)
+      allow(Net::HTTP).to receive(:start).and_yield(connection)
+      allow(connection).to receive(:request) do |request|
+        case request.path
+        when /\/pipelines\?/
+          response = Net::HTTPOK.new('1.1', '200', 'OK')
+          allow(response).to receive(:body).and_return('[{"id":100}]')
+          response
+        when /\/jobs\?/
+          response = Net::HTTPOK.new('1.1', '200', 'OK')
+          allow(response).to receive(:body).and_return('[{"id":1,"name":"rails_spec_tia_map","status":"success"}]')
+          response
+        else
+          response_class.new('1.1', response_class == Net::HTTPUnauthorized ? '401' : '403', 'Denied')
+        end
+      end
+      expect { expect(cli('map', 'fetch')).to eq(1) }.to output(/Denied/).to_stderr
+      expect(File.binread(config.map_path)).to eq(original)
+    end
+  end
+
 end
