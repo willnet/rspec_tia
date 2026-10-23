@@ -44,7 +44,7 @@ module RspecTia
         warn "未知のコマンドです: #{command}\n\n#{USAGE}"
         1
       end
-    rescue Ci::Git::CommandError, Ci::UnknownAdapterError, Map::FormatError, Errno::ENOENT => e
+    rescue Ci::Gitlab::AuthenticationError, Http::Error, Ci::Git::CommandError, Ci::UnknownAdapterError, Map::FormatError, Errno::ENOENT => e
       warn "[rspec_tia] #{e.message}"
       1
     end
