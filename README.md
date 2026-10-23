@@ -182,6 +182,7 @@ Commands accept `--config PATH` and `--root PATH` to override the configuration 
 
 ## Development documentation
 
+- [Rails correctness fixture: execution, expected dependencies, and mutations](test_apps/rails_app/README.md)
 - [Design decisions and architecture](docs/design.md)
 - [Agent and contributor instructions](AGENTS.md)
 
