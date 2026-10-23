@@ -122,12 +122,26 @@ module RspecTia
     end
 
     def load_hash(hash)
+      raise FormatError, 'map must be an object' unless hash.is_a?(Hash)
+
       version = hash['format_version']
       raise FormatError, "unsupported format_version: #{version.inspect}" unless version == FORMAT_VERSION
 
-      spec_list = hash.fetch('specs')
-      source_list = hash.fetch('sources')
-      edges = hash.fetch('edges')
+      spec_list = hash['specs']
+      source_list = hash['sources']
+      edges = hash['edges']
+      valid_paths = [spec_list, source_list].all? do |paths|
+        paths.is_a?(Array) && paths.all? { |path| path.is_a?(String) } && paths.uniq.size == paths.size
+      end
+      unless valid_paths
+        raise FormatError, 'specs and sources must be arrays of unique strings'
+      end
+      valid_edges = edges.is_a?(Array) && edges.size == source_list.size && edges.all? do |ids|
+        ids.is_a?(Array) && ids.all? { |id| id.is_a?(Integer) && id >= 0 && id < spec_list.size }
+      end
+      unless valid_edges
+        raise FormatError, 'edges must contain one array of valid spec indices per source'
+      end
 
       @specs = Set.new(spec_list)
       @edges = {}

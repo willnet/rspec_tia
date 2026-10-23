@@ -98,7 +98,7 @@ RSpec.describe RspecTia::Ci::Gitlab do
         allow(http).to receive(:get_json)
           .with(a_string_including('/pipelines/100/jobs')).and_return(
             [
-              { 'id' => 1, 'name' => 'rails_spec_tia_map 3/18' },
+              { 'id' => 1, 'name' => 'rails_spec_tia_map', 'status' => 'success' },
               { 'id' => 2, 'name' => 'rails_rubocop' },
             ],
             [],
@@ -107,7 +107,8 @@ RSpec.describe RspecTia::Ci::Gitlab do
         archive = Zip::OutputStream.write_buffer do |zip|
           %w(map-3-1.json.gz map-3-2.json.gz).each do |name|
             zip.put_next_entry("tmp/rspec_tia/fragments/#{name}")
-            zip.write(name)
+            map = RspecTia::Map.new(generated_at: Time.now).add("spec/#{name}_spec.rb", ['lib/a.rb'])
+            zip.write(JSON.generate(map.to_h))
           end
           zip.put_next_entry('other/report.xml')
           zip.write('<testsuite/>')

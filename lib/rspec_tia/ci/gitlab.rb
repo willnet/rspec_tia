@@ -1,5 +1,6 @@
 require 'fileutils'
 require 'stringio'
+require 'tmpdir'
 require 'zip'
 require 'rspec_tia/http'
 require 'rspec_tia/ci/base'
@@ -55,10 +56,22 @@ module RspecTia
         warn "[rspec_tia] マップの取得元パイプライン: #{pipeline['id']} (#{pipeline['created_at']})"
         FileUtils.mkdir_p(dest_dir)
 
-        pipeline_jobs(pipeline['id']).flat_map do |job|
-          next [] unless map_job?(job['name'])
+        jobs = pipeline_jobs(pipeline['id']).select { |job| map_job?(job['name']) }
+        validate_map_jobs!(jobs)
+        # 一時領域で全件検証し、失敗時は部分的な断片も公開しない。
+        Dir.mktmpdir('fetch-', dest_dir) do |staging|
+          fragments = jobs.flat_map do |job|
+            downloaded = download_fragments(job, staging)
+            raise Map::FormatError, "#{job['name']}のマップ断片がありません" if downloaded.empty?
 
-          download_fragments(job, dest_dir)
+            downloaded.each { |path| validate_fragment!(path, pipeline) }
+            downloaded
+          end
+          fragments.map do |path|
+            output = File.join(dest_dir, File.basename(path))
+            FileUtils.mv(path, output)
+            output
+          end
         end
       end
 
@@ -111,7 +124,7 @@ module RspecTia
 
       def pipeline_jobs(pipeline_id)
         jobs = []
-        each_page("/projects/#{project_id}/pipelines/#{pipeline_id}/jobs?scope[]=success") { |job| jobs << job }
+        each_page("/projects/#{project_id}/pipelines/#{pipeline_id}/jobs?include_retried=false") { |job| jobs << job }
         jobs
       end
 
@@ -121,6 +134,37 @@ module RspecTia
         return false if expected.to_s.empty?
 
         name == expected || name.start_with?("#{expected} ")
+      end
+
+      # 成功したノードだけを列挙すると、失敗/欠落ノードを完全なマップと誤認する。
+      def validate_map_jobs!(jobs)
+        expected = options['map_job_name']
+        raise Map::FormatError, "マップ生成ジョブが見つかりません: #{expected.inspect}" if jobs.empty?
+        unless jobs.all? { |job| job['status'] == 'success' }
+          raise Map::FormatError, 'マップ生成ジョブがすべて成功していません'
+        end
+        return if jobs.size == 1 && jobs.first['name'] == expected
+
+        matches = jobs.map { |job| job['name'].match(/\A#{Regexp.escape(expected)} (\d+)\/(\d+)\z/) }
+        if matches.any?(&:nil?)
+          raise Map::FormatError, 'マップ生成ジョブ名は単一ジョブまたはname index/total形式にしてください'
+        end
+        totals = matches.map { |match| match[2].to_i }.uniq
+        indices = matches.map { |match| match[1].to_i }.sort
+        unless totals.size == 1 && totals.first.positive? && indices == (1..totals.first).to_a
+          raise Map::FormatError, 'マップ生成ノードが欠落または重複しています'
+        end
+      end
+
+      def validate_fragment!(path, pipeline)
+        map = Map.load(path)
+        raise Map::FormatError, "空のマップ断片です: #{path}" if map.empty?
+        raise Map::FormatError, "無効または古いマップ断片です: #{path}" if map.stale?(max_age_days: @config.map_max_age_days)
+        if pipeline['sha'] && map.commit_sha != pipeline['sha']
+          raise Map::FormatError, "取得元コミットとマップ断片が一致しません: #{path}"
+        end
+      rescue JSON::ParserError, Zlib::Error, KeyError, TypeError, ArgumentError => e
+        raise Map::FormatError, "マップ断片を検証できません: #{path}: #{e.message}"
       end
 
       # 命名規則やプロセス数を推測せず、job artifactの一覧を使う。
