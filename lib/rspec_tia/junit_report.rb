@@ -2,11 +2,11 @@ require 'rexml/document'
 require 'set'
 
 module RspecTia
-  # rspec_junit_formatter が出力した junit.xml を読む。
+  # Read JUnit XML produced by rspec_junit_formatter.
   #
-  # 使い道は2つ。
-  #   - 予測でどれだけ実行時間を削れたかの見積り（testcase の time を specファイル単位に合算）
-  #   - 予測の取りこぼし検証（失敗した testcase の specファイルを集める）
+  # Used for two purposes:
+  #   - Estimate execution time savings by summing testcase durations per spec file.
+  #   - Audit missed predictions by collecting spec files from failed testcases.
   class JunitReport
     FAILURE_ELEMENTS = %w(failure error).freeze
 
@@ -36,7 +36,7 @@ module RspecTia
       @failed_files
     end
 
-    # Metrics は部分集計を利用できるが、Audit は入力の欠落を成功と解釈しない。
+    # Metrics can use partial aggregates, but Audit must not interpret missing input as success.
     def validation_errors
       parse
       @validation_errors
@@ -58,23 +58,23 @@ module RspecTia
       return if @parsed
 
       @parsed = true
-      @validation_errors << 'JUnit XMLが見つかりません' if @paths.empty?
+      @validation_errors << 'No JUnit XML files found' if @paths.empty?
       @paths.each { |path| parse_file(path) }
     end
 
     def parse_file(path)
       document = REXML::Document.new(File.read(path))
       unless document.root && %w(testsuite testsuites).include?(document.root.name)
-        @validation_errors << "#{path}: JUnitのtestsuite/testsuitesがありません"
+        @validation_errors << "#{path}: No JUnit testsuite/testsuites element found"
         return
       end
 
-      # 正常な空suiteは許容する。XMLの不在・破損とは区別する。
+      # Allow valid empty suites, distinguishing them from missing or malformed XML.
       @parsed_file_count += 1
       REXML::XPath.each(document, '//testcase') do |testcase|
         file = normalize(testcase.attributes['file'])
         if file.nil?
-          @validation_errors << "#{path}: file属性のない失敗testcaseがあります" if failed?(testcase)
+          @validation_errors << "#{path}: A failing testcase has no file attribute" if failed?(testcase)
           next
         end
 
@@ -82,8 +82,8 @@ module RspecTia
         @failed_files << file if failed?(testcase)
       end
     rescue REXML::ParseException, SystemCallError => e
-      # 途中で切れた junit.xml（ジョブのタイムアウト等）で全体を落とさない
-      message = "junit.xml を読めませんでした: #{path}: #{e.message}"
+      # Keep processing other files if a JUnit report is truncated, for example by a job timeout.
+      message = "Could not read junit.xml: #{path}: #{e.message}"
       @validation_errors << message
       warn "[rspec_tia] #{message}"
     end
@@ -92,7 +92,7 @@ module RspecTia
       testcase.elements.any? { |element| FAILURE_ELEMENTS.include?(element.name) }
     end
 
-    # rspec_junit_formatter は "./spec/..." 形式で出力する
+    # rspec_junit_formatter emits paths in the form "./spec/...".
     def normalize(file)
       return nil if file.nil? || file.strip.empty?
 

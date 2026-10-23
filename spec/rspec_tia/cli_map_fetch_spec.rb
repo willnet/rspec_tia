@@ -14,7 +14,7 @@ RSpec.describe 'map fetch後の予測' do
   around do |example|
     with_project(['spec/a_spec.rb']) do |root|
       @root = root
-      # 既定と異なるmap_pathでも、fetchとselectが同じ設定を使うことを確認する。
+      # Verify fetch and select share the same configuration even with a custom map_path.
       File.write(File.join(root, '.rspec_tia.yml'), "map:\n  path: cache/current.json.gz\n")
       File.write(File.join(root, 'changed.txt'), "lib/new.rb\n")
       @config = RspecTia::Configuration.load(root: root)

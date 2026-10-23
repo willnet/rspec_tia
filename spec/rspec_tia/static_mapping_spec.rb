@@ -46,7 +46,7 @@ RSpec.describe RspecTia::StaticMapping do
     with_project(%w(spec/requests/frequently_search_keywords_request_spec.rb)) do |root|
       mapping = described_class.new(rules, root: root)
 
-      # 単数形のcontrollerからは、実在しない単数形のspecしか導けないので何も返さない
+      # A singular controller name maps only to a nonexistent singular spec, so no target is returned.
       expect(mapping.specs_for('app/controllers/api/v2/frequently_search_keyword_controller.rb')).to be_empty
     end
   end

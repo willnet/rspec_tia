@@ -9,7 +9,7 @@ module RspecTia
       'git' => Git,
     }.freeze
 
-    # 'auto' のときは CI 固有のアダプタを優先し、無ければ git にフォールバックする
+    # In auto mode, prefer a CI-specific adapter and fall back to Git if none is available.
     AUTO_ORDER = %w(gitlab git).freeze
 
     class UnknownAdapterError < StandardError; end
@@ -19,14 +19,14 @@ module RspecTia
       return build_auto(config) if name == 'auto'
 
       klass = ADAPTERS[name]
-      raise UnknownAdapterError, "未知のCIアダプタです: #{name.inspect}" if klass.nil?
+      raise UnknownAdapterError, "Unknown CI adapter: #{name.inspect}" if klass.nil?
 
       klass.new(config)
     end
 
     def self.build_auto(config)
       name = AUTO_ORDER.find { |candidate| ADAPTERS.fetch(candidate).available? }
-      raise UnknownAdapterError, '利用できるCIアダプタがありません' if name.nil?
+      raise UnknownAdapterError, 'No CI adapter is available' if name.nil?
 
       ADAPTERS.fetch(name).new(config)
     end

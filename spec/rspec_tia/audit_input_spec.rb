@@ -24,10 +24,10 @@ RSpec.describe '監査のJUnit入力検証' do
         result = RspecTia::Audit.new(junit_report: report, predicted_specs: ['spec/a_spec.rb']).call
         expect(result).not_to be_ok
         expect(result.validation_errors).not_to be_empty
-        expect(result.summary).to include('監査を検証できません')
-        expect(result.summary).not_to include('取りこぼしなし')
+        expect(result.summary).to include('Cannot validate audit')
+        expect(result.summary).not_to include('No missed failures')
         expect { expect(RspecTia::Cli.start(['audit', '--junit', dir, '--predicted', predicted])).to eq(1) }
-          .to output(/監査を検証できません/).to_stderr
+          .to output(/Cannot validate audit/).to_stderr
       end
     end
   end
@@ -45,7 +45,7 @@ RSpec.describe '監査のJUnit入力検証' do
         predicted = File.join(root, 'predicted.txt')
         File.write(predicted, '')
         expect { expect(RspecTia::Cli.start(['audit', '--junit', root, '--predicted', predicted])).to eq(0) }
-          .to output(/取りこぼしなし/).to_stderr
+          .to output(/No missed failures/).to_stderr
       end
     end
   end
@@ -56,7 +56,7 @@ RSpec.describe '監査のJUnit入力検証' do
       predicted = File.join(root, 'predicted.txt')
       File.write(predicted, "spec/b_spec.rb\n")
       expect { expect(RspecTia::Cli.start(['audit', '--junit', root, '--predicted', predicted])).to eq(1) }
-        .to output(/予測が取りこぼした失敗spec 1件/).to_stderr
+        .to output(/Prediction missed 1 failing specs/).to_stderr
     end
   end
 
@@ -65,7 +65,7 @@ RSpec.describe '監査のJUnit入力検証' do
       ok = File.join(root, 'ok.xml')
       File.write(ok, '<testsuite><testcase file="spec/a_spec.rb" time="2"><failure/></testcase></testsuite>')
       report = RspecTia::JunitReport.new([File.join(root, 'missing.xml'), ok])
-      expect { report.durations }.to output(/junit.xml を読めませんでした/).to_stderr
+      expect { report.durations }.to output(/Could not read junit.xml/).to_stderr
       expect(report.durations).to eq('spec/a_spec.rb' => 2.0)
       expect(report.failed_files).to contain_exactly('spec/a_spec.rb')
       expect(report.parsed_file_count).to eq(1)

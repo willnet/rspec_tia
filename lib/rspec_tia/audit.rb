@@ -1,24 +1,24 @@
 require 'set'
 
 module RspecTia
-  # 予測の取りこぼしを検証する。
+  # Check predictions for missed failures.
   #
-  # 全実行のjunit.xmlで落ちたspecが、同じ変更に対する予測に含まれていたかを見る。
-  # 含まれていなければ、その変更は予測できていなかった＝マップか設定に穴がある。
+  # Check whether specs that failed in a full-suite JUnit report were predicted for the same change.
+  # A missing spec indicates a gap in the dependency map or configuration.
   #
-  # 予測実行を本番で使う以上、この検証を回し続けないと「静かに落とすようになった」ことに気付けない。
+  # Keep auditing full-suite runs in CI to detect failures silently omitted by selective execution.
   class Audit
     Result = Struct.new(:failed_specs, :predicted_specs, :missed_specs, :validation_errors, keyword_init: true) do
       def ok? = Array(validation_errors).empty? && missed_specs.empty?
 
       def summary
         unless Array(validation_errors).empty?
-          return "[rspec_tia] 監査を検証できません:\n" + validation_errors.map { |error| "  - #{error}" }.join("\n")
+          return "[rspec_tia] Cannot validate audit:\n" + validation_errors.map { |error| "  - #{error}" }.join("\n")
         end
 
-        return "[rspec_tia] 取りこぼしなし（失敗 #{failed_specs.size}件はすべて予測済み）" if ok?
+        return "[rspec_tia] No missed failures (all #{failed_specs.size} failing specs were predicted)" if ok?
 
-        "[rspec_tia] 予測が取りこぼした失敗spec #{missed_specs.size}件:\n" +
+        "[rspec_tia] Prediction missed #{missed_specs.size} failing specs:\n" +
           missed_specs.sort.map { |spec| "  - #{spec}" }.join("\n")
       end
     end

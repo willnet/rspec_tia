@@ -1,5 +1,5 @@
 RSpec.describe RspecTia::Predictor do
-  # 実在チェックが入るため、一時ディレクトリに実ファイルを置いて検証する
+  # Create real files in a temporary directory because prediction checks file existence.
   PROJECT_FILES = %w(
     spec/models/user_spec.rb
     spec/models/v2/sell_case_spec.rb
@@ -93,7 +93,7 @@ RSpec.describe RspecTia::Predictor do
 
   it '削除されたspecは実行対象から外す（存在しないパスを渡すとrspecが落ちるため）' do
     with_project(PROJECT_FILES) do |root|
-      # 静的マッピングが拾わないパスを使い、マップ由来の候補だけで検証する
+      # Use a path not covered by static mappings to test only candidates from the coverage map.
       map = fresh_map.add('spec/models/deleted_spec.rb', %w(app/lib/foo.rb))
 
       result = build(root, map).call(context(%w(app/lib/foo.rb)))
@@ -120,7 +120,7 @@ RSpec.describe RspecTia::Predictor do
         result = build(root, map).call(context(%w(Gemfile.lock)))
 
         expect(result).to be_full_run
-        expect(result.reason).to match(/全実行対象のファイル/)
+        expect(result.reason).to match(/Full-run path changed/)
         expect(result.specs).to match_array PROJECT_FILES
       end
     end
@@ -133,7 +133,7 @@ RSpec.describe RspecTia::Predictor do
         result = build(root, stale).call(context(%w(app/models/user.rb)))
 
         expect(result).to be_full_run
-        expect(result.reason).to match(/古い/)
+        expect(result.reason).to match(/stale/)
       end
     end
   end

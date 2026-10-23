@@ -1,5 +1,5 @@
 RSpec.describe RspecTia::Audit do
-  # 全実行で落ちたspecを表す最小のダブル
+  # Minimal double representing specs that failed in a full-suite run.
   def report(failed)
     instance_double(RspecTia::JunitReport, failed_files: Set.new(failed), validation_errors: [])
   end
@@ -12,7 +12,7 @@ RSpec.describe RspecTia::Audit do
 
     expect(result).to be_ok
     expect(result.missed_specs).to be_empty
-    expect(result.summary).to match(/取りこぼしなし/)
+    expect(result.summary).to match(/No missed failures/)
   end
 
   it '予測に含まれていない失敗specを取りこぼしとして報告する' do

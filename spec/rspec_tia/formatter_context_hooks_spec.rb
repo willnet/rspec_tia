@@ -74,7 +74,7 @@ RSpec.describe 'context hookの依存帰属' do
     it "#{hook}(:context)で失敗しても不完全なマップを新鮮と判定しない" do
       project_run('defined', failure: hook) do |map, status, output|
         expect(status.success?).to be(false), output
-        expect(output).to include('生成マップを無効な鮮度')
+        expect(output).to include('saving the generated map as stale')
         expect(map).to be_stale(max_age_days: 3)
         expect(map.specs_for('lib/a_before.rb')).to include('spec/a_spec.rb')
         expect(map.specs_for('lib/a_after.rb')).to include('spec/a_spec.rb')

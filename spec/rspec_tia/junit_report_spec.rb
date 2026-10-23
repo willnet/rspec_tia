@@ -5,7 +5,7 @@ RSpec.describe RspecTia::JunitReport do
     path
   end
 
-  # rspec_junit_formatter は file を "./spec/..." 形式で出力する
+  # rspec_junit_formatter emits the file attribute in the form "./spec/...".
   let(:xml_a) do
     <<~XML
       <?xml version="1.0" encoding="UTF-8"?>
@@ -61,7 +61,7 @@ RSpec.describe RspecTia::JunitReport do
 
       report = described_class.load_dir(dir)
 
-      expect { report.durations }.to output(/junit.xml を読めませんでした/).to_stderr
+      expect { report.durations }.to output(/Could not read junit.xml/).to_stderr
       expect(report.durations['spec/models/user_spec.rb']).to eq 2.0
     end
   end

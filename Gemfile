@@ -5,7 +5,7 @@ gemspec
 gem 'rake'
 gem 'rspec', '~> 3.13'
 
-# Formatterのロード順を実Rails/ActiveRecordで検証する。
+# Verify formatter load order using real Rails and ActiveRecord.
 gem 'railties', '~> 7.2'
 gem 'activerecord', '~> 7.2'
 gem 'sqlite3', '~> 2.1'

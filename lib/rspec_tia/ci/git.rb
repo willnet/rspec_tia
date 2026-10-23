@@ -3,8 +3,8 @@ require 'rspec_tia/ci/base'
 
 module RspecTia
   module Ci
-    # git だけで完結する汎用アダプタ。
-    # クローンが浅いと共通祖先が手元に無く差分が取れないため、CI では専用アダプタを優先する。
+    # Generic adapter that uses Git without a CI API.
+    # Prefer CI-specific adapters because shallow clones may lack the common ancestor needed for a diff.
     class Git < Base
       class CommandError < StandardError; end
 
@@ -36,7 +36,7 @@ module RspecTia
       def capture(*command)
         stdout, stderr, status = Open3.capture3(*command, chdir: @config.root)
         unless status.success?
-          raise CommandError, "#{command.join(' ')} に失敗しました: #{stderr.strip}"
+          raise CommandError, "Command failed: #{command.join(' ')}: #{stderr.strip}"
         end
 
         stdout

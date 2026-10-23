@@ -1,16 +1,16 @@
-# マップ生成時に、テストフレームワークやアプリより前に Coverage を起動する。
+# Start Coverage before the test framework or application when generating a map.
 #
 #   RUBYOPT="-rrspec_tia/boot" bundle exec rspec ...
 #
-# 最初期に読ませる理由は2つある。
+# Load this entry point early for two reasons:
 #
-#   1. アプリのコードがロードされる前に計測を始めないと、どのファイルも追跡対象にならない
-#   2. SimpleCov は `SimpleCov.start unless Coverage.running?` のように
-#      Coverage の起動状態を見て二重起動を避ける実装が多い。先に起動しておくことで、
-#      アプリ側を改修せずに SimpleCov との衝突を避けられる
+#   1. Coverage must start before application code loads, or its files cannot be tracked.
+#   2. SimpleCov integrations often check Coverage.running? to avoid starting twice,
+#      using code such as SimpleCov.start unless Coverage.running?. Starting first
+#      can avoid conflicts without changing the application.
 #
-# oneshot_lines は使わない。clear しても一度記録された行が再記録されず、
-# 最初にその行を通ったspecが依存を専有してマップが壊れるため（実測で確認済み）。
+# Do not use oneshot_lines: clearing does not allow previously recorded lines to be recorded again.
+# Only the first spec to execute each line would receive its dependency, corrupting the map (observed in practice).
 require 'coverage'
 
 Coverage.start(lines: true) unless Coverage.running?

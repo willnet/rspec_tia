@@ -1,18 +1,18 @@
 require 'yaml'
 
 module RspecTia
-  # .rspec_tia.yml の読み込みと既定値。
+  # Load .rspec_tia.yml and apply defaults.
   #
-  # パスのパターンは File.fnmatch?(FNM_PATHNAME | FNM_EXTGLOB) で判定する。
-  # GitLab CI の rules:changes と同じ記法なので、`config/**/*` のように書く
-  # （`config/**` はネストしたパスにマッチしないので注意）。
+  # Match path patterns with File.fnmatch?(FNM_PATHNAME | FNM_EXTGLOB).
+  # Use patterns such as config/**/*, as in GitLab CI rules:changes.
+  # The pattern config/** does not match nested paths.
   class Configuration
     DEFAULT_PATH = '.rspec_tia.yml'.freeze
     FNMATCH_FLAGS = File::FNM_PATHNAME | File::FNM_EXTGLOB
 
     DEFAULTS = {
       'spec_glob' => 'spec/**/*_spec.rb',
-      # 全実行と判定したときに select が出力する1行。rspec / 分割スクリプトにそのまま渡せる値を書く
+      # The single line emitted by select for a full run; use a value accepted by RSpec or a splitting script.
       'full_run_token' => 'spec',
       'map' => {
         'fragment_dir' => 'tmp/rspec_tia/fragments',
@@ -78,8 +78,8 @@ module RspecTia
 
     def active_record_enabled? = dig('rails', 'active_record')
 
-    # 'auto' のときは Rails の有無で判断する。
-    # eager_load 対策と code-less クラス補完は入れ忘れると静かに精度が落ちるため、既定で有効にする
+    # In auto mode, enable support when Rails is loaded.
+    # Enable eager-load handling and model dependency supplementation by default to avoid silently losing accuracy.
     def rails_enabled?
       value = dig('rails', 'enabled')
       return !!value unless value == 'auto'

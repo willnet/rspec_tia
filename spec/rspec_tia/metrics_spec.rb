@@ -29,9 +29,9 @@ RSpec.describe RspecTia::Metrics do
 
       metrics = described_class.new(config: config_for(root), result: result(specs: %w(spec/a_spec.rb)), junit_report: report)
 
-      # 件数では 1/4 = 25% だが、実行時間では 1.0/10.0 = 10%
+      # The spec count ratio is 1/4 = 25%, while the duration ratio is 1.0/10.0 = 10%.
       expect(metrics.to_h).to include('spec_ratio' => 0.25, 'time_ratio' => 0.1)
-      expect(metrics.summary).to include '推定実行時間 10.0%'
+      expect(metrics.summary).to include 'Estimated runtime 10.0%'
     end
   end
 

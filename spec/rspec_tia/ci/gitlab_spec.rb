@@ -8,7 +8,7 @@ RSpec.describe RspecTia::Ci::Gitlab do
 
   before { allow(adapter).to receive(:http).and_return(http) }
 
-  # ENVを直接いじらず、テストの中でだけ差し替える
+  # Stub the environment only within each test rather than modifying ENV.
   def with_env(vars)
     original = vars.keys.to_h { |key| [key, ENV.fetch(key, nil)] }
     vars.each { |key, value| ENV[key] = value }
@@ -120,7 +120,7 @@ RSpec.describe RspecTia::Ci::Gitlab do
 
           expect(saved.map { |path| File.basename(path) })
             .to eq %w(job_1_0_map-3-1.json.gz job_1_1_map-3-2.json.gz)
-          # 対象外のジョブにはリクエストしない
+          # Do not request artifacts for unrelated jobs.
           expect(http).not_to have_received(:get).with(a_string_including('/jobs/2/'))
         end
       end
@@ -132,7 +132,7 @@ RSpec.describe RspecTia::Ci::Gitlab do
 
         Dir.mktmpdir do |dir|
           expect { @saved = adapter.fetch_map_fragments(dir) }
-            .to output(/マップ生成パイプラインが見つかりません/).to_stderr
+            .to output(/No map-generation pipeline found/).to_stderr
           expect(@saved).to eq []
         end
       end
