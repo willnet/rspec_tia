@@ -50,7 +50,7 @@ module RspecTia
     def format_template(template, captures)
       format(template, *captures)
     rescue ArgumentError, TypeError
-      warn "[rspec_tia] static_mapping の雛形と後方参照が一致しません: #{template.inspect} <- #{captures.inspect}"
+      warn "[rspec_tia] static_mapping template placeholders do not match capture groups: #{template.inspect} <- #{captures.inspect}"
       nil
     end
   end

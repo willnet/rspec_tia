@@ -59,7 +59,7 @@ module RspecTia
       if notification.failed_examples.any? || RSpec.world.non_example_failure
         # 失敗したhook・fail-fast等で未実行の経路を含むマップは鮮度判定を通さない。
         @map.load_hash(@map.to_h.merge('generated_at' => Time.at(0).utc.iso8601))
-        warn '[rspec_tia] テスト実行に失敗したため、生成マップを無効な鮮度で保存します'
+        warn '[rspec_tia] Test run failed; saving the generated map as stale'
       end
       @map.dump(fragment_path)
     end

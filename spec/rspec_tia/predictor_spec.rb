@@ -120,7 +120,7 @@ RSpec.describe RspecTia::Predictor do
         result = build(root, map).call(context(%w(Gemfile.lock)))
 
         expect(result).to be_full_run
-        expect(result.reason).to match(/全実行対象のファイル/)
+        expect(result.reason).to match(/Full-run path changed/)
         expect(result.specs).to match_array PROJECT_FILES
       end
     end
@@ -133,7 +133,7 @@ RSpec.describe RspecTia::Predictor do
         result = build(root, stale).call(context(%w(app/models/user.rb)))
 
         expect(result).to be_full_run
-        expect(result.reason).to match(/古い/)
+        expect(result.reason).to match(/stale/)
       end
     end
   end

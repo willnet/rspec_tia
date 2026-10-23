@@ -12,7 +12,7 @@ RSpec.describe RspecTia::Audit do
 
     expect(result).to be_ok
     expect(result.missed_specs).to be_empty
-    expect(result.summary).to match(/取りこぼしなし/)
+    expect(result.summary).to match(/No missed failures/)
   end
 
   it '予測に含まれていない失敗specを取りこぼしとして報告する' do

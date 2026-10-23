@@ -49,11 +49,11 @@ module RspecTia
       def fetch_map_fragments(dest_dir)
         pipeline = latest_map_pipeline
         if pipeline.nil?
-          warn '[rspec_tia] マップ生成パイプラインが見つかりません'
+          warn '[rspec_tia] No map-generation pipeline found'
           return []
         end
 
-        warn "[rspec_tia] マップの取得元パイプライン: #{pipeline['id']} (#{pipeline['created_at']})"
+        warn "[rspec_tia] Map source pipeline: #{pipeline['id']} (#{pipeline['created_at']})"
         FileUtils.mkdir_p(dest_dir)
 
         jobs = pipeline_jobs(pipeline['id']).select { |job| map_job?(job['name']) }
@@ -62,7 +62,7 @@ module RspecTia
         Dir.mktmpdir('fetch-', dest_dir) do |staging|
           fragments = jobs.flat_map do |job|
             downloaded = download_fragments(job, staging)
-            raise Map::FormatError, "#{job['name']}のマップ断片がありません" if downloaded.empty?
+            raise Map::FormatError, "No map fragments found for #{job['name']}" if downloaded.empty?
 
             downloaded.each { |path| validate_fragment!(path, pipeline) }
             downloaded
@@ -92,7 +92,7 @@ module RspecTia
         token = ENV['RSPEC_TIA_GITLAB_TOKEN']
         if token.to_s.empty?
           raise AuthenticationError,
-                'GitLab APIにはRSPEC_TIA_GITLAB_TOKEN（read_api権限）が必要です。CI_JOB_TOKENだけではMR差分・マップ検索に対応しません'
+                'GitLab API requires RSPEC_TIA_GITLAB_TOKEN with read_api scope. CI_JOB_TOKEN alone does not support MR diffs or map discovery'
         end
 
         { 'PRIVATE-TOKEN' => token }
@@ -139,32 +139,32 @@ module RspecTia
       # 成功したノードだけを列挙すると、失敗/欠落ノードを完全なマップと誤認する。
       def validate_map_jobs!(jobs)
         expected = options['map_job_name']
-        raise Map::FormatError, "マップ生成ジョブが見つかりません: #{expected.inspect}" if jobs.empty?
+        raise Map::FormatError, "No map-generation jobs found: #{expected.inspect}" if jobs.empty?
         unless jobs.all? { |job| job['status'] == 'success' }
-          raise Map::FormatError, 'マップ生成ジョブがすべて成功していません'
+          raise Map::FormatError, 'Not all map-generation jobs succeeded'
         end
         return if jobs.size == 1 && jobs.first['name'] == expected
 
         matches = jobs.map { |job| job['name'].match(/\A#{Regexp.escape(expected)} (\d+)\/(\d+)\z/) }
         if matches.any?(&:nil?)
-          raise Map::FormatError, 'マップ生成ジョブ名は単一ジョブまたはname index/total形式にしてください'
+          raise Map::FormatError, 'Map-generation job names must use a single job name or the name index/total format'
         end
         totals = matches.map { |match| match[2].to_i }.uniq
         indices = matches.map { |match| match[1].to_i }.sort
         unless totals.size == 1 && totals.first.positive? && indices == (1..totals.first).to_a
-          raise Map::FormatError, 'マップ生成ノードが欠落または重複しています'
+          raise Map::FormatError, 'Map-generation nodes are missing or duplicated'
         end
       end
 
       def validate_fragment!(path, pipeline)
         map = Map.load(path)
-        raise Map::FormatError, "空のマップ断片です: #{path}" if map.empty?
-        raise Map::FormatError, "無効または古いマップ断片です: #{path}" if map.stale?(max_age_days: @config.map_max_age_days)
+        raise Map::FormatError, "Empty map fragment: #{path}" if map.empty?
+        raise Map::FormatError, "Invalid or stale map fragment: #{path}" if map.stale?(max_age_days: @config.map_max_age_days)
         if pipeline['sha'] && map.commit_sha != pipeline['sha']
-          raise Map::FormatError, "取得元コミットとマップ断片が一致しません: #{path}"
+          raise Map::FormatError, "Map fragment does not match the source commit: #{path}"
         end
       rescue JSON::ParserError, Zlib::Error, KeyError, TypeError, ArgumentError => e
-        raise Map::FormatError, "マップ断片を検証できません: #{path}: #{e.message}"
+        raise Map::FormatError, "Cannot validate map fragment: #{path}: #{e.message}"
       end
 
       # 命名規則やプロセス数を推測せず、job artifactの一覧を使う。
@@ -182,7 +182,7 @@ module RspecTia
         end
         saved
       rescue Http::Error, Zip::Error => e
-        raise Map::FormatError, "#{job['name']}のartifactを取得できません: #{e.message}"
+        raise Map::FormatError, "Cannot fetch artifacts for #{job['name']}: #{e.message}"
       end
 
       def fragment_entry?(name)

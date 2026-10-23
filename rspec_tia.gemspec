@@ -6,8 +6,8 @@ Gem::Specification.new do |spec|
   spec.authors = ['Shinichi Maeshima']
   spec.summary = 'Test Impact Analysis for RSpec'
   spec.description = <<~DESC
-    コードカバレッジからspecファイル単位の依存マップを作り、
-    変更されたファイルに影響するspecだけを選び出す。
+    Build a spec-file dependency map from code coverage and select
+    only the specs affected by changed files.
   DESC
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 3.3.0'

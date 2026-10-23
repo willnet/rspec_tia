@@ -58,14 +58,14 @@ module RspecTia
       return if @parsed
 
       @parsed = true
-      @validation_errors << 'JUnit XMLが見つかりません' if @paths.empty?
+      @validation_errors << 'No JUnit XML files found' if @paths.empty?
       @paths.each { |path| parse_file(path) }
     end
 
     def parse_file(path)
       document = REXML::Document.new(File.read(path))
       unless document.root && %w(testsuite testsuites).include?(document.root.name)
-        @validation_errors << "#{path}: JUnitのtestsuite/testsuitesがありません"
+        @validation_errors << "#{path}: No JUnit testsuite/testsuites element found"
         return
       end
 
@@ -74,7 +74,7 @@ module RspecTia
       REXML::XPath.each(document, '//testcase') do |testcase|
         file = normalize(testcase.attributes['file'])
         if file.nil?
-          @validation_errors << "#{path}: file属性のない失敗testcaseがあります" if failed?(testcase)
+          @validation_errors << "#{path}: A failing testcase has no file attribute" if failed?(testcase)
           next
         end
 
@@ -83,7 +83,7 @@ module RspecTia
       end
     rescue REXML::ParseException, SystemCallError => e
       # 途中で切れた junit.xml（ジョブのタイムアウト等）で全体を落とさない
-      message = "junit.xml を読めませんでした: #{path}: #{e.message}"
+      message = "Could not read junit.xml: #{path}: #{e.message}"
       @validation_errors << message
       warn "[rspec_tia] #{message}"
     end

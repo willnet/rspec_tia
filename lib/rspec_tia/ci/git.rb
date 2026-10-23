@@ -36,7 +36,7 @@ module RspecTia
       def capture(*command)
         stdout, stderr, status = Open3.capture3(*command, chdir: @config.root)
         unless status.success?
-          raise CommandError, "#{command.join(' ')} に失敗しました: #{stderr.strip}"
+          raise CommandError, "Command failed: #{command.join(' ')}: #{stderr.strip}"
         end
 
         stdout

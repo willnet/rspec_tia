@@ -13,12 +13,12 @@ module RspecTia
 
       def summary
         unless Array(validation_errors).empty?
-          return "[rspec_tia] 監査を検証できません:\n" + validation_errors.map { |error| "  - #{error}" }.join("\n")
+          return "[rspec_tia] Cannot validate audit:\n" + validation_errors.map { |error| "  - #{error}" }.join("\n")
         end
 
-        return "[rspec_tia] 取りこぼしなし（失敗 #{failed_specs.size}件はすべて予測済み）" if ok?
+        return "[rspec_tia] No missed failures (all #{failed_specs.size} failing specs were predicted)" if ok?
 
-        "[rspec_tia] 予測が取りこぼした失敗spec #{missed_specs.size}件:\n" +
+        "[rspec_tia] Prediction missed #{missed_specs.size} failing specs:\n" +
           missed_specs.sort.map { |spec| "  - #{spec}" }.join("\n")
       end
     end

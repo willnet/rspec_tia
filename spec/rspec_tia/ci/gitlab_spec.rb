@@ -132,7 +132,7 @@ RSpec.describe RspecTia::Ci::Gitlab do
 
         Dir.mktmpdir do |dir|
           expect { @saved = adapter.fetch_map_fragments(dir) }
-            .to output(/マップ生成パイプラインが見つかりません/).to_stderr
+            .to output(/No map-generation pipeline found/).to_stderr
           expect(@saved).to eq []
         end
       end

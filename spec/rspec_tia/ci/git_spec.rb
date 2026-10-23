@@ -60,7 +60,7 @@ RSpec.describe RspecTia::Ci::Git do
         stdout, stderr, status = Open3.capture3(RbConfig.ruby, '-I', lib, cli, 'select', '--root', root)
         expect(status.exitstatus).to eq(1)
         expect(stdout).to eq('')
-        expect(stderr).to include('git diff', base, '失敗しました')
+        expect(stderr).to include('git diff', base, 'Command failed')
         expect(stderr).not_to match(/\tfrom /)
       end
     end

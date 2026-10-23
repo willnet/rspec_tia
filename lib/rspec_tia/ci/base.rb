@@ -30,7 +30,7 @@ module RspecTia
 
       # マップの断片を dest_dir にダウンロードし、保存したパスの配列を返す
       def fetch_map_fragments(_dest_dir)
-        raise UnsupportedError, "#{self.class.name} はマップの取得に対応していません"
+        raise UnsupportedError, "#{self.class.name} does not support map fetching"
       end
     end
   end

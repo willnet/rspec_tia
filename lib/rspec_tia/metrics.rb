@@ -35,14 +35,14 @@ module RspecTia
     def summary
       data = to_h
       if data['full_run']
-        "[rspec_tia] 全実行: #{data['reason']}（#{data['total_spec_count']}件）"
+        "[rspec_tia] Full run: #{data['reason']} (#{data['total_spec_count']} specs)"
       else
         format(
-          '[rspec_tia] 予測実行: %d / %d 件 (%.1f%%)%s',
+          '[rspec_tia] Selected specs: %d / %d (%.1f%%)%s',
           data['predicted_spec_count'],
           data['total_spec_count'],
           (data['spec_ratio'] || 0) * 100,
-          data['time_ratio'] ? format(' / 推定実行時間 %.1f%%', data['time_ratio'] * 100) : '',
+          data['time_ratio'] ? format(' / Estimated runtime %.1f%%', data['time_ratio'] * 100) : '',
         )
       end
     end
