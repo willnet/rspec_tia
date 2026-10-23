@@ -1,0 +1,68 @@
+# Handwritten oracle; never regenerate this file from a collected map.
+cases:
+  M1_shared_service:
+    description: Both consumers execute the same method; no other spec calls it.
+    source: app/services/shared_value.rb
+    exact_specs:
+      - spec/services/first_spec.rb
+      - spec/services/second_spec.rb
+  M2_unused_service:
+    description: Defining this class during eager load is not runtime use.
+    source: app/services/unused_value.rb
+    exact_specs: []
+  M3_M4_preloaded_model:
+    description: Only the two model specs issue named Account SQL or instantiate it; boot coverage is cleared.
+    source: app/models/account.rb
+    exact_specs:
+      - spec/models/account_spec.rb
+      - spec/models/account_query_spec.rb
+    exact_specs_without_ar: []
+  M6_before_suite:
+    description: Before suite runs outside any group and belongs to every discovered spec.
+    source: app/services/suite_before.rb
+    exact_specs: all
+  M6_after_suite:
+    description: After suite runs outside any group and belongs to every discovered spec.
+    source: app/services/suite_after.rb
+    exact_specs: all
+  M7_shared_examples:
+    description: Shared example code belongs to each runnable consumer, never its support definition.
+    source: app/services/shared_example_value.rb
+    exact_specs:
+      - spec/services/shared_first_spec.rb
+      - spec/services/shared_second_spec.rb
+  M5_context_before:
+    description: This dedicated hook runs only in context_spec, including nested and multiple top-level groups.
+    source: app/services/context_before.rb
+    exact_specs:
+      - spec/hooks/context_spec.rb
+  M5_context_after:
+    description: This dedicated hook runs only in context_spec, including nested and multiple top-level groups.
+    source: app/services/context_after.rb
+    exact_specs:
+      - spec/hooks/context_spec.rb
+  M5_nested_before:
+    description: This dedicated hook runs only in context_spec, including nested and multiple top-level groups.
+    source: app/services/nested_before.rb
+    exact_specs:
+      - spec/hooks/context_spec.rb
+  M5_nested_after:
+    description: This dedicated hook runs only in context_spec, including nested and multiple top-level groups.
+    source: app/services/nested_after.rb
+    exact_specs:
+      - spec/hooks/context_spec.rb
+  M5_all_before:
+    description: This dedicated hook runs only in context_spec, including nested and multiple top-level groups.
+    source: app/services/all_before.rb
+    exact_specs:
+      - spec/hooks/context_spec.rb
+  M5_all_after:
+    description: This dedicated hook runs only in context_spec, including nested and multiple top-level groups.
+    source: app/services/all_after.rb
+    exact_specs:
+      - spec/hooks/context_spec.rb
+  M5_second_group_value:
+    description: This dedicated hook runs only in context_spec, including nested and multiple top-level groups.
+    source: app/services/second_group_value.rb
+    exact_specs:
+      - spec/hooks/context_spec.rb

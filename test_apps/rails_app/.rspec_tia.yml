@@ -1,0 +1,8 @@
+full_run:
+  paths:
+    - config/**/*
+static_mapping:
+  - source: 'app/views/([^/]+)/.*'
+    test: 'spec/requests/%s_spec.rb'
+  - source: 'app/services/(.*)\.rb'
+    test: 'spec/services/%s_spec.rb'

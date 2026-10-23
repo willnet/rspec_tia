@@ -1,0 +1,18 @@
+cases:
+  V1_shared_service:
+    description: Changing a shared return value breaks both consumers while unrelated specs stay unselected.
+    source: app/services/shared_value.rb
+    before: "'shared value'"
+    after: "'broken value'"
+    failed_specs:
+      - spec/services/first_spec.rb
+      - spec/services/second_spec.rb
+    forbidden_specs:
+      - spec/services/unrelated_spec.rb
+  V1_model_validation:
+    description: Changing a declaration in a preloaded bodyless model breaks validation; AR supplies the dependency.
+    source: app/models/account.rb
+    before: 'validates :name, presence: true'
+    after: 'validates :name, length: { minimum: 100 }'
+    failed_specs:
+      - spec/models/account_spec.rb

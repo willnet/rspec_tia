@@ -1,0 +1,29 @@
+cases:
+  P1_template:
+    description: A static view rule selects the request spec independently of ERB coverage.
+    changed_files:
+      - app/views/accounts/index.html.erb
+    static_only: true
+    specs:
+      - spec/requests/accounts_spec.rb
+  P2_new_source:
+    description: A newly added source absent from the baseline map matches an existing spec by name.
+    added_source: app/services/future_value.rb
+    added_content: "class FutureValue; end\n"
+    changed_files:
+      - app/services/future_value.rb
+    specs:
+      - spec/services/future_value_spec.rb
+  P3_changed_spec:
+    description: A spec change selects that spec itself.
+    changed_files:
+      - spec/services/unrelated_spec.rb
+    specs:
+      - spec/services/unrelated_spec.rb
+  P4_configuration:
+    description: Configuration changes match the explicitly configured full-run paths.
+    changed_files:
+      - config/routes.rb
+    full_run: true
+    reason: 'Full-run path changed: config/routes.rb'
+    specs: all
