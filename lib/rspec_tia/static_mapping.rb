@@ -1,13 +1,13 @@
 module RspecTia
-  # 命名規約による「ソースファイル -> specファイル」の変換。
+  # Map source files to specs using naming conventions.
   #
-  # カバレッジマップが答えられない次の3つを埋めるために使う。
-  #   - マップに載っていない新規追加ファイル
-  #   - メソッド本体を持たないファイル（AR通知でも拾えないもの）
-  #   - カバレッジに現れないテンプレート（HAML等）
+  # Supplement coverage dependencies in three cases:
+  #   - Newly added files absent from the map.
+  #   - Files without executable method bodies, including those missed by ActiveRecord notifications.
+  #   - Templates such as HAML that do not appear in coverage.
   #
-  # ルールは source（正規表現）と test（%s に後方参照を順に埋める雛形。配列可）の組。
-  # 解決先が実在しない場合は捨てるので、単複の揺れやタイポによる誤変換は自然に落ちる。
+  # Each rule pairs a source regex with a test template (or array); captures replace %s placeholders in order.
+  # Discard nonexistent targets, naturally excluding mismatches caused by typos or singular/plural naming.
   class StaticMapping
     Rule = Struct.new(:pattern, :templates, keyword_init: true)
 
@@ -45,8 +45,8 @@ module RspecTia
       end
     end
 
-    # 雛形の %s の数と後方参照の数が食い違う設定ミスは、そのルールを無視して続行する。
-    # 1つのルールの記述ミスで予測全体を落とさないため
+    # Ignore a rule if its number of %s placeholders does not match the capture count.
+    # A typo in one rule should not prevent the rest of the prediction from completing.
     def format_template(template, captures)
       format(template, *captures)
     rescue ArgumentError, TypeError

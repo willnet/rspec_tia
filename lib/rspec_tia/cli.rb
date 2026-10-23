@@ -108,7 +108,7 @@ module RspecTia
       dest = @options[:dest] || config.map_fragment_dir
       fragments = Ci.build(config).fetch_map_fragments(dest)
       if fragments.empty?
-        # 再利用されたワークスペースのマップでも、宣言どおり全実行に倒す。
+        # Ensure even a reused workspace falls back to a full run when no map is available.
         File.delete(config.map_path) if File.exist?(config.map_path)
         warn '[rspec_tia] No map fragments available (selection will fall back to a full run)'
         return 0
@@ -215,8 +215,8 @@ module RspecTia
       @config ||= Configuration.load(@options[:config], root: root)
     end
 
-    # 変更ファイルを外から渡せるようにしておく。
-    # 過去のマージコミットを流して削減率と取りこぼしを事前に測る（オフライン検証）ために使う
+    # Allow changed files to be supplied externally.
+    # This supports offline evaluation of savings and missed failures using historical merge commits.
     def select_context
       source = @options[:changed_files_from]
       return Ci.build(config).context if source.nil?

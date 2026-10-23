@@ -6,8 +6,8 @@ require 'rspec_tia/static_mapping'
 require 'rspec_tia/fallback'
 require 'rspec_tia/predictor'
 
-# rspec_tia/formatter は rspec-core のロード後にしか定義できないため、
-# rspec_tia/boot は Coverage を最初期に起動する必要があるため、いずれもここでは読み込まない。
+# Do not load these entry points here: the formatter requires rspec-core to be loaded,
+# while boot must start Coverage as early as possible.
 module RspecTia
   class Error < StandardError; end
 
@@ -18,8 +18,8 @@ module RspecTia
       @config ||= Configuration.load(ENV['RSPEC_TIA_CONFIG'])
     end
 
-    # マップがどのコミットで作られたかを記録しておく。鮮度の判断と、
-    # 予測を外したときの追跡に使う
+    # Record the commit used to generate the map for freshness checks
+    # and for investigating missed predictions.
     def commit_sha
       ENV['CI_COMMIT_SHA'] || ENV['GITHUB_SHA']
     end

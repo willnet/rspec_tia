@@ -2,10 +2,10 @@ require 'fileutils'
 require 'json'
 
 module RspecTia
-  # 予測が何をどれだけ削ったかを記録する。
+  # Record how much work each prediction eliminates.
   #
-  # 予測実行を本番で使う以上、削減率と、全実行に倒れた理由は毎回残しておく。
-  # junit.xml があれば、件数ではなく実測時間で重み付けした削減率も出す。
+  # Always record savings and full-run reasons when using selective execution in CI.
+  # When JUnit XML is available, also estimate savings using measured durations.
   class Metrics
     def initialize(config:, result:, junit_report: nil)
       @config = config

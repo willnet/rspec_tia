@@ -1,12 +1,12 @@
 require 'set'
 
 module RspecTia
-  # 変更ファイル一覧から、実行すべきspecファイルを決める。
+  # Select spec files affected by a list of changed files.
   #
-  # 3つの経路の和集合を取る。
-  #   1. カバレッジマップの逆引き（主）
-  #   2. 静的マッピング（新規ファイル・テンプレート・拾えなかったcode-lessクラスの補完）
-  #   3. 変更されたspecファイルそのもの
+  # Take the union of three sources:
+  #   1. Reverse lookup in the coverage map (primary).
+  #   2. Static mappings for new files, templates, and missed classes without executable bodies.
+  #   3. Changed spec files themselves.
   class Predictor
     Result = Struct.new(:full_run, :reason, :specs, :sources, keyword_init: true) do
       def full_run? = !!full_run
@@ -37,8 +37,8 @@ module RspecTia
       File.fnmatch?(@config.spec_glob, path, Configuration::FNMATCH_FLAGS)
     end
 
-    # 削除されたspecや、マップ生成後にリネームされたspecを実行対象から外す。
-    # 存在しないパスを rspec に渡すとジョブ全体が落ちるため、ここで必ず絞る
+    # Exclude specs deleted or renamed since map generation.
+    # Passing nonexistent paths to RSpec would fail the entire job.
     def existing(specs)
       specs.select { |path| File.exist?(File.join(@config.root, path)) }
     end

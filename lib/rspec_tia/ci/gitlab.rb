@@ -7,11 +7,11 @@ require 'rspec_tia/ci/base'
 
 module RspecTia
   module Ci
-    # GitLab CI アダプタ。
+    # GitLab CI adapter.
     #
-    # 変更ファイルの取得に git を使わないのは、CIが浅いクローン（GIT_DEPTH）で動いていると
-    # ターゲットブランチとの共通祖先が手元に無く `git diff origin/master...HEAD` が使えないため。
-    # MRのdiffはAPIから取る。
+    # Do not use Git for changed files: shallow CI clones (GIT_DEPTH) may lack the common
+    # ancestor with the target branch, making git diff origin/master...HEAD unavailable.
+    # Fetch merge request diffs through the API instead.
     class Gitlab < Base
       class AuthenticationError < StandardError; end
 
@@ -39,7 +39,7 @@ module RspecTia
 
         paths = []
         each_page("/projects/#{project_id}/merge_requests/#{iid}/diffs") do |diff|
-          # リネームや削除では旧パスの依存も実行対象に含める必要がある
+          # Include dependencies of the old path when a file is renamed or deleted.
           paths << diff['new_path'] unless diff['deleted_file']
           paths << diff['old_path']
         end
@@ -58,7 +58,7 @@ module RspecTia
 
         jobs = pipeline_jobs(pipeline['id']).select { |job| map_job?(job['name']) }
         validate_map_jobs!(jobs)
-        # 一時領域で全件検証し、失敗時は部分的な断片も公開しない。
+        # Validate everything in staging; do not publish partial fragments if any step fails.
         Dir.mktmpdir('fetch-', dest_dir) do |staging|
           fragments = jobs.flat_map do |job|
             downloaded = download_fragments(job, staging)
@@ -87,7 +87,7 @@ module RspecTia
         )
       end
 
-      # MR差分・pipeline/job一覧には通常のCI_JOB_TOKENでは足りない。
+      # A normal CI_JOB_TOKEN is insufficient for MR diffs and pipeline/job discovery.
       def auth_header
         token = ENV['RSPEC_TIA_GITLAB_TOKEN']
         if token.to_s.empty?
@@ -128,7 +128,7 @@ module RspecTia
         jobs
       end
 
-      # parallel なジョブ名は "rails_spec_tia_map 3/18" のようになるため前方一致で見る
+      # Parallel job names look like "rails_spec_tia_map 3/18", so match by prefix.
       def map_job?(name)
         expected = options['map_job_name']
         return false if expected.to_s.empty?
@@ -136,7 +136,7 @@ module RspecTia
         name == expected || name.start_with?("#{expected} ")
       end
 
-      # 成功したノードだけを列挙すると、失敗/欠落ノードを完全なマップと誤認する。
+      # Listing only successful nodes would misidentify failed or missing nodes as a complete map.
       def validate_map_jobs!(jobs)
         expected = options['map_job_name']
         raise Map::FormatError, "No map-generation jobs found: #{expected.inspect}" if jobs.empty?
@@ -167,14 +167,14 @@ module RspecTia
         raise Map::FormatError, "Cannot validate map fragment: #{path}: #{e.message}"
       end
 
-      # 命名規則やプロセス数を推測せず、job artifactの一覧を使う。
+      # Enumerate job artifacts instead of guessing filenames or process counts.
       def download_fragments(job, dest_dir)
         archive = http.get("/projects/#{project_id}/jobs/#{job['id']}/artifacts")
         saved = []
         Zip::File.open_buffer(StringIO.new(archive)) do |zip|
           saved = zip.entries.reject(&:directory?).select { |entry| fragment_entry?(entry.name) }.sort_by(&:name)
              .each_with_index.map do |entry, index|
-            # artifact内のパスは出力先に使わず、重複名やパストラバーサルを避ける。
+            # Do not use archive entry paths as output paths; avoid collisions and path traversal.
             output = File.join(dest_dir, "job_#{job['id']}_#{index}_#{File.basename(entry.name)}")
             File.binwrite(output, zip.get_input_stream(entry).read)
             output

@@ -9,7 +9,7 @@ module RspecTia
       'git' => Git,
     }.freeze
 
-    # 'auto' のときは CI 固有のアダプタを優先し、無ければ git にフォールバックする
+    # In auto mode, prefer a CI-specific adapter and fall back to Git if none is available.
     AUTO_ORDER = %w(gitlab git).freeze
 
     class UnknownAdapterError < StandardError; end

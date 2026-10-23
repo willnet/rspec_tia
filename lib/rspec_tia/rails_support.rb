@@ -1,22 +1,22 @@
 require 'set'
 
 module RspecTia
-  # Rails 固有の補完。
+  # Rails-specific dependency supplementation.
   #
-  # 次のようなクラスはロード後に実行される行を持たないため、カバレッジには決して現れない。
+  # Classes like this have no lines executed after loading, so runtime usage is invisible to coverage.
   #
   #   class Account < ApplicationRecord
   #     belongs_to :user
   #   end
   #
-  # ActiveRecord の通知から「そのspecが触ったモデル」を拾い、
-  # Module.const_source_location で定義ファイルに変換して依存に足す。
+  # Use ActiveRecord notifications to identify models touched by each spec,
+  # then resolve definition files with Module.const_source_location and add dependencies.
   #
-  # 実Railsアプリケーションの実測では、この補完によって依存エッジが 402 -> 594（+48%）に増えた。
-  # 補完がないと約1/3の依存を取りこぼす。
+  # In one Rails application, this increased dependency edges from 402 to 594 (+48%).
+  # Without supplementation, roughly one third of those dependencies were missed.
   class RailsSupport
-    # payload[:name] は "User Load" / "User Create" のような形式。
-    # モデル名でないもの（SCHEMA / TRANSACTION 等）は const_source_location 側で落ちる
+    # payload[:name] has a form such as "User Load" or "User Create".
+    # Non-model names such as SCHEMA and TRANSACTION are rejected during constant source resolution.
     SQL_EVENT = 'sql.active_record'.freeze
     INSTANTIATION_EVENT = 'instantiation.active_record'.freeze
 
@@ -40,7 +40,7 @@ module RspecTia
       self
     end
 
-    # 直前の flush 以降に触れたファイルを返し、蓄積をリセットする
+    # Return files touched since the previous flush and reset the accumulated set.
     def flush
       files = @files.to_a
       @files = Set.new
@@ -56,7 +56,7 @@ module RspecTia
       @files << path unless path.nil?
     end
 
-    # 同じクラス名が1つのspecで何百回も通知されるため、解決結果を必ずキャッシュする
+    # Cache resolution results because the same class may be reported hundreds of times per spec.
     def source_location_of(class_name)
       return @source_location_cache[class_name] if @source_location_cache.key?(class_name)
 
@@ -70,7 +70,7 @@ module RspecTia
 
       path.delete_prefix(@root)
     rescue NameError
-      # 定数として解決できない名前（SQL / SCHEMA 等）は補完対象ではない
+      # Names that cannot be resolved as constants, such as SQL and SCHEMA, are not model dependencies.
       nil
     end
   end

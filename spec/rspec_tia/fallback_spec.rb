@@ -72,7 +72,7 @@ RSpec.describe RspecTia::Fallback do
     end
 
     it '該当ファイルが多い場合は理由を省略表示する' do
-      # 件数の閾値が先に発火しないよう、この検証だけ上限を上げる
+      # Raise the limit for this test so the changed-file count check does not trigger first.
       loose = RspecTia::Configuration.new({
         'full_run' => { 'paths' => %w(config/**/*), 'max_changed_files' => 100 },
       })

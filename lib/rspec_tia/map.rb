@@ -6,10 +6,10 @@ require 'time'
 require 'zlib'
 
 module RspecTia
-  # specファイルと、そのspecが実行したソースファイルの対応表。
+  # Map spec files to the source files they execute.
   #
-  # 問い合わせは常に「変更されたソースファイル -> 実行すべきspec」の向きなので、
-  # 内部では逆引き（source -> Set(spec)）で保持する。
+  # Queries always go from changed sources to affected specs,
+  # so store dependencies as a reverse index: source -> Set(spec).
   class Map
     FORMAT_VERSION = 1
 
@@ -22,7 +22,7 @@ module RspecTia
         new.tap { |map| map.load_hash(read_hash(path)) }
       end
 
-      # 複数の断片（parallel_testsのプロセスごと・CIノードごとに出力される）を1つにまとめる
+      # Merge fragments produced by parallel_tests processes and CI nodes.
       def merge_files(paths)
         paths.reduce(new) { |merged, path| merged.merge!(load(path)) }
       end
@@ -35,8 +35,8 @@ module RspecTia
         JSON.parse(raw)
       end
 
-      # 拡張子ではなくgzipのマジックナンバーで判定する。
-      # CIのartifactは拡張子が保たれない経路を通ることがあるため
+      # Detect gzip using its magic bytes rather than the filename extension.
+      # CI artifact transfer paths may not preserve extensions.
       def gzipped?(raw)
         raw.getbyte(0) == 0x1f && raw.getbyte(1) == 0x8b
       end
@@ -82,13 +82,13 @@ module RspecTia
       other.sources.each do |source|
         (@edges[source] ||= Set.new).merge(other.specs_for(source))
       end
-      # 断片ごとに生成時刻が異なるため、最も古いものを採用して鮮度判定を安全側に倒す
+      # Use the oldest fragment timestamp to keep freshness checks conservative.
       @generated_at = [@generated_at, other.generated_at].compact.min
       @commit_sha ||= other.commit_sha
       self
     end
 
-    # 生成時刻が不明な場合も「古い」とみなす（安全側）
+    # Treat an unknown generation timestamp as stale to stay conservative.
     def stale?(max_age_days:, now: Time.now)
       return true if @generated_at.nil?
 

@@ -6,19 +6,19 @@ require 'rspec_tia'
 require 'rspec_tia/rails_support'
 
 module RspecTia
-  # specファイル単位でカバレッジを切り出し、依存マップの断片を書き出す RSpec フォーマッタ。
+  # RSpec formatter that records coverage dependencies per spec file as map fragments.
   #
   #   RUBYOPT="-rrspec_tia/boot" bundle exec rspec \
   #     --require rspec_tia/formatter --format RspecTia::Formatter
   #
-  # 仕組み
-  #   - suite開始時に1回 clear する。eager_load を有効にしていると boot 時点で
-  #     全クラス定義行が実行済みになるため、これを捨てないと全specが全ファイルに依存してしまう
-  #   - specファイルが切り替わるたびに Coverage.result(clear: true) を取る。
-  #     clear 付きで取れば「返ってきた結果 = そのspecが触ったファイル」になり、差分計算が要らない
+  # How it works:
+  #   - Clear coverage once at suite start. With eager_load enabled, boot executes
+  #     every class definition; retaining those hits would link every spec to every file.
+  #   - Call Coverage.result(clear: true) whenever the spec file changes.
+  #     Each result then contains only files touched by that spec, avoiding cumulative diffs.
   #
-  # 粒度がspecファイル単位なのは、example単位にすると呼び出し回数が2桁増えるため。
-  # specファイル単位なら実測で 25〜31ms × specファイル数に収まる。
+  # Collect coverage per spec file because per-example collection increases calls by two orders of magnitude.
+  # Observed collection cost per spec file was 25–31 ms.
   class Formatter
     RSpec::Core::Formatters.register self, :start, :example_group_started, :example_group_finished, :example_started, :stop
 
@@ -32,12 +32,12 @@ module RspecTia
 
     def start(_notification)
       @rails_support ||= build_rails_support
-      # boot（とspecファイルのロード）で実行された行を捨てる
+      # Discard lines executed during boot and spec loading.
       Coverage.result(stop: false, clear: true)
       @rails_support&.flush
     end
 
-    # group開始通知はbefore(:context)より先、終了通知はafter(:context)より後に届く。
+    # Group start arrives before before(:context); group finish arrives after after(:context).
     def example_group_started(notification)
       switch_spec(relative(group_spec_path(notification.group)))
     end
@@ -57,7 +57,7 @@ module RspecTia
       flush
       @map.specs.each { |spec| @map.add(spec, (@suite_sources || []).to_a) }
       if notification.failed_examples.any? || RSpec.world.non_example_failure
-        # 失敗したhook・fail-fast等で未実行の経路を含むマップは鮮度判定を通さない。
+        # Maps with unexecuted paths due to failed hooks or fail-fast must not pass freshness checks.
         @map.load_hash(@map.to_h.merge('generated_at' => Time.at(0).utc.iso8601))
         warn '[rspec_tia] Test run failed; saving the generated map as stale'
       end
@@ -85,7 +85,7 @@ module RspecTia
     end
 
     def group_spec_path(group)
-      # shared examples の定義位置ではなく、実行可能な最上位groupのspecを使う。
+      # Use the runnable top-level group’s spec, rather than the shared examples definition.
       metadata = group.parent_groups.last.metadata
       metadata[:absolute_file_path] || metadata[:file_path]
     end
@@ -100,7 +100,7 @@ module RspecTia
       touched = @rails_support ? @rails_support.flush : []
       sources = project_files(result) + touched
       if @current_spec.nil?
-        # before/after(:suite)の依存は最初・最後のspecへ偏らせず全specへ付ける。
+        # Attribute before/after(:suite) dependencies to every spec, not just the first or last.
         (@suite_sources ||= Set.new).merge(sources)
       else
         @map.add(@current_spec, sources)
@@ -119,8 +119,8 @@ module RspecTia
       end
     end
 
-    # parallel_tests のプロセスごと・CIのノードごとに別ファイルへ書き出す。
-    # 同じ名前に書くとプロセス間で上書きし合って依存が欠落する
+    # Write a separate file for each parallel_tests process and CI node.
+    # Reusing a filename would let processes overwrite dependencies recorded by other processes.
     def fragment_path
       return ENV['RSPEC_TIA_FRAGMENT_PATH'] if ENV['RSPEC_TIA_FRAGMENT_PATH']
 

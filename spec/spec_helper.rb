@@ -1,6 +1,6 @@
 require 'rspec_tia'
-# 以下はCLIからのみ読まれる（フォーマッタ側に不要な依存を持ち込まないため、
-# lib/rspec_tia.rb では読み込んでいない）
+# Load these dependencies only for the CLI; lib/rspec_tia.rb omits them
+# to avoid introducing unnecessary dependencies into the formatter.
 require 'rspec_tia/audit'
 require 'rspec_tia/ci'
 require 'rspec_tia/junit_report'
@@ -17,8 +17,8 @@ RSpec.configure do |config|
 end
 
 module SpecSupport
-  # 実在チェックが入る箇所（static_mapping / predictor）のために、
-  # 一時ディレクトリに実際のファイルを置いて検証する
+  # Create real files in a temporary directory for code that checks file existence,
+  # such as static mappings and prediction.
   def with_project(files)
     Dir.mktmpdir('rspec_tia') do |root|
       files.each do |path|

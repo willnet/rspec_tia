@@ -4,15 +4,15 @@ require 'openssl'
 require 'uri'
 
 module RspecTia
-  # CI の API を叩くための最小の GET クライアント。
+  # Minimal GET client for CI APIs.
   class Http
     OPEN_TIMEOUT_SECONDS = 10
     READ_TIMEOUT_SECONDS = 30
 
-    # 通信起因の例外。呼び出し側がジョブ単位でスキップできるよう Error に変換する
+    # Wrap transport exceptions in Error so callers can handle failures at the job level.
     NETWORK_ERRORS = [
-      Timeout::Error, # Net::OpenTimeout / Net::ReadTimeout の親
-      SystemCallError, # Errno::ECONNRESET / Errno::ECONNREFUSED 等の親
+      Timeout::Error, # Parent of Net::OpenTimeout and Net::ReadTimeout.
+      SystemCallError, # Parent of errors such as Errno::ECONNRESET and Errno::ECONNREFUSED.
       SocketError,
       IOError,
       OpenSSL::SSL::SSLError,
@@ -20,8 +20,8 @@ module RspecTia
 
     class Error < StandardError; end
 
-    # artifact が存在しない（プロセス数を超えたファイル名・期限切れ）ことを示す。
-    # 一時的な通信障害と区別して、取得の打ち切り判定に使う
+    # Indicates a missing artifact, such as an expired artifact or a nonexistent process filename.
+    # Distinguish this from transient transport failures when deciding whether to stop fetching.
     class NotFound < Error; end
 
     def initialize(base_url:, headers: {})

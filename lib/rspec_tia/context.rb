@@ -1,6 +1,6 @@
 module RspecTia
-  # CIアダプタが集めた「予測に必要な入力」。
-  # アダプタごとの差異をここで吸収し、Predictor から下はCI非依存にする。
+  # Prediction inputs collected by a CI adapter.
+  # Normalize adapter differences here so Predictor and downstream logic remain CI-independent.
   Context = Struct.new(
     :changed_files,
     :labels,

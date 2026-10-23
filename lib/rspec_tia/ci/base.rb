@@ -1,7 +1,7 @@
 module RspecTia
   module Ci
-    # CIアダプタのインターフェース。
-    # Predictor から下はCI非依存にするため、CI固有の事情は全てここより下に閉じ込める。
+    # CI adapter interface.
+    # Keep CI-specific details behind this interface so Predictor and downstream logic stay CI-independent.
     class Base
       class UnsupportedError < StandardError; end
 
@@ -13,7 +13,7 @@ module RspecTia
         false
       end
 
-      # 予測の入力をまとめて返す
+      # Collect inputs for prediction.
       def context
         Context.new(
           changed_files: changed_files,
@@ -28,7 +28,7 @@ module RspecTia
       def labels = []
       def commit_message = nil
 
-      # マップの断片を dest_dir にダウンロードし、保存したパスの配列を返す
+      # Download map fragments to dest_dir and return their paths.
       def fetch_map_fragments(_dest_dir)
         raise UnsupportedError, "#{self.class.name} does not support map fetching"
       end

@@ -1,12 +1,12 @@
 require 'set'
 
 module RspecTia
-  # 予測の取りこぼしを検証する。
+  # Check predictions for missed failures.
   #
-  # 全実行のjunit.xmlで落ちたspecが、同じ変更に対する予測に含まれていたかを見る。
-  # 含まれていなければ、その変更は予測できていなかった＝マップか設定に穴がある。
+  # Check whether specs that failed in a full-suite JUnit report were predicted for the same change.
+  # A missing spec indicates a gap in the dependency map or configuration.
   #
-  # 予測実行を本番で使う以上、この検証を回し続けないと「静かに落とすようになった」ことに気付けない。
+  # Keep auditing full-suite runs in CI to detect failures silently omitted by selective execution.
   class Audit
     Result = Struct.new(:failed_specs, :predicted_specs, :missed_specs, :validation_errors, keyword_init: true) do
       def ok? = Array(validation_errors).empty? && missed_specs.empty?

@@ -1,5 +1,5 @@
 RSpec.describe RspecTia::Audit do
-  # 全実行で落ちたspecを表す最小のダブル
+  # Minimal double representing specs that failed in a full-suite run.
   def report(failed)
     instance_double(RspecTia::JunitReport, failed_files: Set.new(failed), validation_errors: [])
   end

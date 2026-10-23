@@ -1,9 +1,9 @@
 module RspecTia
-  # 「予測せず全specを実行する」条件の判定。
+  # Determine when to run every spec instead of predicting.
   #
-  # カバレッジで検出できない変更（依存gem・CI定義・実行環境）と、
-  # 予測の信頼性が落ちる状況（マップが古い・変更が大きすぎる）を列挙する。
-  # 判定結果は理由の文字列で返し、CIのログとメトリクスに残す。
+  # Cover changes invisible to coverage, such as gems, CI definitions, and the execution environment,
+  # as well as situations that reduce confidence, such as stale maps or large changes.
+  # Return the reason as text for CI logs and metrics.
   class Fallback
     SAMPLE_SIZE = 5
 

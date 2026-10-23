@@ -5,7 +5,7 @@ RSpec.describe RspecTia::JunitReport do
     path
   end
 
-  # rspec_junit_formatter は file を "./spec/..." 形式で出力する
+  # rspec_junit_formatter emits the file attribute in the form "./spec/...".
   let(:xml_a) do
     <<~XML
       <?xml version="1.0" encoding="UTF-8"?>
