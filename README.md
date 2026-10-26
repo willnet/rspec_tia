@@ -68,6 +68,7 @@ described_class:
 rails:
   enabled: auto
   active_record: true
+  action_view: true
 
 ci:
   adapter: auto  # auto | gitlab | git
@@ -78,6 +79,30 @@ metrics_path: tmp/rspec_tia/metrics.json
 Path globs use Ruby's `File.fnmatch?` with `FNM_PATHNAME | FNM_EXTGLOB`. Use `config/**/*` for nested paths; `config/**` does not match nested files. Static mapping sources are regular expressions, rather than path globs.
 
 Rails support is enabled automatically when Rails is loaded. ActiveRecord tracking supplements coverage for model dependencies that coverage alone may miss.
+
+ActionView tracking records rendered templates, partials, collections, and layouts
+as dependencies of their consumer spec files. Shared partials and layouts are
+recorded for every spec that renders them, including subsequent uses of compiled
+templates. Set `rails.action_view: false` to disable this independently of
+`rails.active_record`; `rails.enabled: false` disables both. Tracking initializes
+after spec loading, so Rails can be required from `spec/rails_helper.rb`.
+
+Only existing files inside the project root are recorded. Inline templates,
+virtual identifiers, and files in external engines/gems are skipped. Renders in
+context hooks belong to the consumer spec, and renders in suite hooks belong to
+every recorded spec; renders during application/spec loading are discarded.
+The integration suite verifies ERB rendering with Rails 7.2 (tested with 7.2.4).
+Other Rails versions and HAML handlers have not been verified.
+
+Collection cache hits still identify the collection's primary partial. However,
+fragment/collection cache hits can skip nested partials and partial layouts, so
+their notifications cannot identify every dependency. Generate maps with
+fragment and collection caching disabled when relying on those nested dependencies,
+or cover the affected paths with explicit `static_mapping` rules or
+`full_run.paths` (for example, `app/views/**/*`). Keep full-suite audits enabled.
+Static mappings remain necessary for new or unrendered templates and conditional
+rendering paths absent from the map. After enabling tracking, regenerate existing
+maps to collect the additional template edges.
 
 Described-class tracking is enabled by default, including without Rails. For each
 executed example whose `described_class` is a named class or module, it adds the
@@ -188,7 +213,7 @@ Commands accept `--config PATH` and `--root PATH` to override the configuration 
 
 ## Limitations
 
-- Templates such as HAML and ERB are not captured by Ruby coverage. Add static mappings.
+- Ruby coverage alone does not capture templates. ActionView tracking supplements rendered project files; use static mappings or full-run paths for unrendered/new templates, disabled tracking, and cache-hidden dependencies as described above.
 - Files without executable method bodies may be missed when neither described-class nor ActiveRecord tracking identifies them. Use static mappings for those cases.
 - Described-class tracking resolves the named constant's definition location, not every file that reopens the class. Ancestors and definition locations are cached on first use per target object during a map run; later changes to that object's ancestor chain are not tracked. It does not discover unexecuted dynamic dependencies or arbitrary classes referenced inside examples.
 - Dependencies on external services and data files are not detected. Add relevant paths to `full_run.paths`.

@@ -8,6 +8,7 @@ RSpecの全実行からspecファイル単位の依存マップを生成し、�
 
 - `boot.rb` / `formatter.rb`: アプリのロード前に計測を開始し、specとhookの依存を断片に記録する。
 - `rails_support.rb`: Rails・ActiveRecord固有の依存を補完する。
+- `action_view_support.rb`: ActionViewの描画通知からテンプレートの依存を補完する。
 - `described_class_support.rb`: 実行したexampleの明示的な対象と祖先の定義ファイルを補完する。
 - `map.rb`: マップの保存、読み込み、統合、鮮度判定を担う。
 - `predictor.rb` / `static_mapping.rb` / `fallback.rb`: 依存の逆引き、静的補完、全実行への切り替えを担う。
@@ -39,6 +40,16 @@ end
 ```
 
 `sql.active_record` と `instantiation.active_record` を購読し、モデル名を `Module.const_source_location` で定義ファイルに変換して依存へ追加する。旧READMEのあるRailsアプリでの実測では、依存エッジが402から594へ約48%増えた。この観測は、カバレッジだけではモデル依存を取りこぼすことを示す。Rails関連の設定は、補完の入れ忘れで精度が静かに落ちないよう既定で有効にする。
+
+## ActionViewによる補完
+
+Issue #27の共有partial・layoutは、ファイル名から利用元画面を逆算する静的ルールだけでは網羅しにくい。ActionViewの描画通知の`identifier`を既存のMapへ追加し、実際に同じテンプレートを利用した各specへ依存を記録する。`rails.action_view`は既定で有効とし、ActiveRecordとは独立して無効化できる。Rails全体が無効なら両方を購読しない。既存マップの形式・Predictor・Coverageの粒度は変えない。
+
+Rails 7.2.4の実レンダリングで`render_template`・`render_partial`・`render_collection`・`render_layout`の`.action_view`通知を確認した。partial専用layoutには`render_layout`通知がないため、各Templateの描画で発火する`!render_template.action_view`も購読する。コンパイルへのパッチではなく描画通知を用い、コンパイル済みテンプレートの後続specへの帰属を維持する。`layout` payloadは仮想名のためファイルパスとして解釈しない。絶対`identifier`を正規化し、実在し、symlinkの参照先もプロジェクト内のファイルだけをroot相対パスでSetへ蓄積する。HAMLおよび他Rails版の動作は未検証とする。
+
+Formatterのstartでspecロード後に購読する。boot由来の蓄積を捨て、Coverageと同じflush境界で取り出すため、context hook・shared examplesは利用元spec、suite hookは全specへ帰属する。AR・ActionView双方の購読トークンを保持し、多重購読を防ぎ、stopのensureでマップ保存失敗時も解除する。
+
+Rails 7.2.4ではcollectionのキャッシュヒットでも主partialのidentifierは通知される一方、fragment・collection内で省略された子partialやpartial専用layoutは描画通知へ現れない。別specのキャッシュ内容から依存を推測して転記することはせず、この制限を実レンダリングで検証する。入れ子の依存に頼る場合はマップ生成時に描画キャッシュを無効化するか、静的ルールまたは全実行パスを設定する。新規・未描画テンプレートも引き続き静的補完の対象とし、全実行とのauditを維持する。
 
 ## described_classによる補完
 
