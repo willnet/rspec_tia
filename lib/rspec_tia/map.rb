@@ -18,8 +18,12 @@ module RspecTia
     attr_reader :generated_at, :commit_sha
 
     class << self
+      # Report corrupted files, such as truncated gzip or JSON, as FormatError with the path
+      # so that the CLI can fail with a diagnostic instead of a backtrace.
       def load(path)
         new.tap { |map| map.load_hash(read_hash(path)) }
+      rescue FormatError, JSON::ParserError, Zlib::Error => e
+        raise FormatError, "Invalid map file: #{path}: #{e.message}"
       end
 
       # Merge fragments produced by parallel_tests processes and CI nodes.
@@ -148,9 +152,19 @@ module RspecTia
       source_list.each_with_index do |source, i|
         @edges[source] = Set.new(edges[i].map { |id| spec_list[id] })
       end
-      @generated_at = hash['generated_at'] && Time.iso8601(hash['generated_at'])
+      @generated_at = parse_time(hash['generated_at'])
       @commit_sha = hash['commit_sha']
       self
+    end
+
+    private
+
+    def parse_time(value)
+      return nil if value.nil?
+
+      Time.iso8601(value)
+    rescue ArgumentError, TypeError
+      raise FormatError, "invalid generated_at: #{value.inspect}"
     end
   end
 end

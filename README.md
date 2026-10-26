@@ -160,7 +160,7 @@ bundle exec rspec-tia select > specs.txt || exit "$?"
 
 Supported job names are a single `map_job_name` or GitLab numeric parallel names such as `rspec-map 1/4`. All nodes must succeed and provide valid, fresh fragments from the same commit. Incomplete or invalid downloads fail and preserve the existing merged map. Other naming formats, including `parallel:matrix`, are unsupported. Ensure each job saves fragments from every process, and propagate RSpec and artifact-upload failures.
 
-When no map fragments are available through the adapter's normal no-map path, `map fetch` removes the existing merged map so selection falls back to a full run. Artifact HTTP failures, including 404 responses, are errors. Use `map fetch --no-merge` to download without merging, or `--dest DIR` to change the download directory.
+When no map fragments are available through the adapter's normal no-map path, `map fetch` removes the existing merged map so selection falls back to a full run. Artifact HTTP failures, including 404 responses, are errors. Redirects, such as GitLab.com artifact downloads served through a CDN, are followed; the token is sent only to the GitLab API origin. Use `map fetch --no-merge` to download without merging, or `--dest DIR` to change the download directory.
 
 ## Audit and diagnostics
 

@@ -53,6 +53,28 @@ RSpec.describe 'map fetch後の予測' do
     expect { expect(select(@root)).to eq(0) }.to output("spec/a_spec.rb\n").to_stdout
   end
 
+  it '取得に対応しないアダプタでは既存マップを維持して非ゼロ終了する' do
+    write_map(@config.map_path, Time.now, 'lib/old.rb')
+    original = File.binread(@config.map_path)
+    allow(RspecTia::Ci).to receive(:build).and_return(RspecTia::Ci::Git.new(@config))
+    diagnostic = nil
+    allow_any_instance_of(RspecTia::Cli).to receive(:warn) { |_cli, message| diagnostic = message }
+
+    expect(RspecTia::Cli.start(['map', 'fetch', '--root', @root])).to eq(1)
+    expect(diagnostic).to include('does not support map fetching')
+    expect(File.binread(@config.map_path)).to eq(original)
+  end
+
+  it '壊れた既存マップではselectが何も出力せず非ゼロ終了する' do
+    FileUtils.mkdir_p(File.dirname(@config.map_path))
+    File.binwrite(@config.map_path, "\x1f\x8b\x08\x00broken".b)
+    diagnostic = nil
+    allow_any_instance_of(RspecTia::Cli).to receive(:warn) { |_cli, message| diagnostic = message }
+
+    expect { expect(select(@root)).to eq(1) }.to output('').to_stdout
+    expect(diagnostic).to include('Invalid map file', @config.map_path)
+  end
+
   it '取得成功時の--no-mergeは既存マップを変更しない' do
     write_map(@config.map_path, Time.now, 'lib/old.rb')
     original = File.binread(@config.map_path)
