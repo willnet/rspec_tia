@@ -44,7 +44,8 @@ module RspecTia
         warn "Unknown command: #{command}\n\n#{USAGE}"
         1
       end
-    rescue Ci::Gitlab::AuthenticationError, Http::Error, Ci::Git::CommandError, Ci::UnknownAdapterError, Map::FormatError, Errno::ENOENT => e
+    rescue Ci::Gitlab::AuthenticationError, Http::Error, Ci::Git::CommandError, Ci::UnknownAdapterError,
+           Ci::Base::UnsupportedError, Map::FormatError, Errno::ENOENT => e
       warn "[rspec_tia] #{e.message}"
       1
     end
@@ -92,11 +93,7 @@ module RspecTia
         return 1
       end
 
-      map = Map.merge_files(fragments)
-      path = map.dump(@options[:output] || config.map_path)
-      warn format('[rspec_tia] Merged %d fragments -> %s (%d specs / %d sources)',
-                  fragments.size, path, map.specs.size, map.sources.size)
-      0
+      merge_fragments(fragments)
     end
 
     def map_fetch
@@ -117,15 +114,14 @@ module RspecTia
       warn "[rspec_tia] Fetched #{fragments.size} fragments -> #{dest}"
       return 0 if @options[:merge] == false
 
-      @options[:fragments] = dest
-      map_merge_from(fragments)
+      merge_fragments(fragments)
     end
 
-    def map_merge_from(fragments)
+    def merge_fragments(fragments)
       map = Map.merge_files(fragments)
       path = map.dump(@options[:output] || config.map_path)
-      warn format('[rspec_tia] Created map -> %s (%d specs / %d sources)',
-                  path, map.specs.size, map.sources.size)
+      warn format('[rspec_tia] Merged %d fragments -> %s (%d specs / %d sources)',
+                  fragments.size, path, map.specs.size, map.sources.size)
       0
     end
 
@@ -182,11 +178,13 @@ module RspecTia
       stale = map.stale?(max_age_days: config.map_max_age_days)
       detail = "#{map.specs.size} specs / #{map.sources.size} sources / generated #{map.generated_at&.utc&.iso8601 || 'unknown'}"
       [!stale, stale ? "#{detail} (stale)" : detail]
+    rescue Map::FormatError => e
+      [false, e.message]
     end
 
     def adapter_status
       adapter = Ci.build(config)
-      [true, "#{adapter.class.name}（MR: #{adapter.merge_request?}）"]
+      [true, "#{adapter.class.name} (MR: #{adapter.merge_request?})"]
     rescue Ci::UnknownAdapterError => e
       [false, e.message]
     end

@@ -56,6 +56,24 @@ RSpec.describe RspecTia::Map do
         expect { described_class.load(path) }.to raise_error(described_class::FormatError, /999/)
       end
     end
+
+    {
+      '壊れたJSON' => '{"format_version":',
+      '途中で切れたgzip' => "\x1f\x8b\x08\x00broken".b,
+      '不正なgenerated_at' => :invalid_time,
+      '文字列でないgenerated_at' => :numeric_time,
+    }.each do |name, content|
+      it "#{name}はパスを含むFormatErrorにする" do
+        Dir.mktmpdir do |dir|
+          path = File.join(dir, 'map.json.gz')
+          content = JSON.generate(map.to_h.merge('generated_at' => 'yesterday')) if content == :invalid_time
+          content = JSON.generate(map.to_h.merge('generated_at' => 0)) if content == :numeric_time
+          File.binwrite(path, content)
+
+          expect { described_class.load(path) }.to raise_error(described_class::FormatError, /#{Regexp.escape(path)}/)
+        end
+      end
+    end
   end
 
   describe '#merge!' do
