@@ -4,6 +4,7 @@ require 'rspec/core/formatters'
 require 'set'
 require 'rspec_tia'
 require 'rspec_tia/rails_support'
+require 'rspec_tia/described_class_support'
 
 module RspecTia
   # RSpec formatter that records coverage dependencies per spec file as map fragments.
@@ -28,6 +29,7 @@ module RspecTia
       @map = Map.new(generated_at: Time.now, commit_sha: RspecTia.commit_sha)
       @current_spec = nil
       @rails_support = nil
+      @described_class_support = DescribedClassSupport.new(root: @root) if @config.described_class_enabled?
     end
 
     def start(_notification)
@@ -51,6 +53,9 @@ module RspecTia
 
     def example_started(notification)
       switch_spec(relative(spec_path_of(notification.example)))
+      if @described_class_support
+        @map.add(@current_spec, @described_class_support.files_for(notification.example.example_group.described_class))
+      end
     end
 
     def stop(notification)

@@ -2,7 +2,7 @@ require 'open3'
 require 'rbconfig'
 
 RSpec.describe 'specロード後のRails依存補完' do
-  def run_project(enabled, active_record: true, preload: false)
+  def run_project(enabled, active_record: true, preload: false, describe_model: false)
     Dir.mktmpdir do |root|
       FileUtils.mkdir_p(File.join(root, 'app/models'))
       FileUtils.mkdir_p(File.join(root, 'spec'))
@@ -15,7 +15,7 @@ RSpec.describe 'specロード後のRails依存補完' do
         ActiveRecord::Schema.define { create_table(:users) { |t| t.string :name } }
         require_relative '../app/models/user'
         User.create!(name: 'test')
-        RSpec.describe('real Rails model') do
+        RSpec.describe(#{describe_model ? 'User' : "'real Rails model'"}) do
           it('loads a record') { expect(User.first.name).to eq('test') }
         end
       RUBY
@@ -49,6 +49,15 @@ RSpec.describe 'specロード後のRails依存補完' do
   it 'Railsが先にロード済みでも補完する' do
     run_project('auto', preload: true) do |map|
       expect(map.specs_for('app/models/user.rb')).to contain_exactly('spec/a_spec.rb')
+    end
+  end
+
+  it 'merges described class and ActiveRecord dependencies without duplicate edges' do
+    run_project('auto', describe_model: true) do |map|
+      expect(map.specs_for('app/models/user.rb')).to contain_exactly('spec/a_spec.rb')
+      serialized = map.to_h
+      index = serialized.fetch('sources').index('app/models/user.rb')
+      expect(serialized.fetch('edges').fetch(index)).to eq([0])
     end
   end
 

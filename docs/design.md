@@ -8,6 +8,7 @@ RSpecの全実行からspecファイル単位の依存マップを生成し、�
 
 - `boot.rb` / `formatter.rb`: アプリのロード前に計測を開始し、specとhookの依存を断片に記録する。
 - `rails_support.rb`: Rails・ActiveRecord固有の依存を補完する。
+- `described_class_support.rb`: 実行したexampleの明示的な対象と祖先の定義ファイルを補完する。
 - `map.rb`: マップの保存、読み込み、統合、鮮度判定を担う。
 - `predictor.rb` / `static_mapping.rb` / `fallback.rb`: 依存の逆引き、静的補完、全実行への切り替えを担う。
 - `ci/`: 変更情報とマップ断片を取得する。CLIは入出力と各処理の接続を担う。
@@ -38,6 +39,16 @@ end
 ```
 
 `sql.active_record` と `instantiation.active_record` を購読し、モデル名を `Module.const_source_location` で定義ファイルに変換して依存へ追加する。旧READMEのあるRailsアプリでの実測では、依存エッジが402から594へ約48%増えた。この観測は、カバレッジだけではモデル依存を取りこぼすことを示す。Rails関連の設定は、補完の入れ忘れで精度が静かに落ちないよう既定で有効にする。
+
+## described_classによる補完
+
+Issue #26の定数・宣言だけを持つクラスは、suite開始時のクリア後にCoverageへ現れず、一般のRubyクラスやSQLを使わないモデルにはActiveRecord通知も届かない。実行したexampleのgroupから`described_class`を取得し、名前付きClass/Module自身と`ancestors`の定義ファイルを補完する。Railsに依存せず既定で有効にし、`described_class.enabled: false`で個別に無効化できる。
+
+example開始時に既存のspec切り替え・flushを完了してから、利用元の最上位groupのspecへ`Map#add`する。shared examplesの定義元へ帰属させず、同一specの複数groupは和集合になる。Coverageの取得回数・specファイル単位の粒度・Mapの形式は変更しない。context hookの帰属は引き続きCoverage側で検証する。
+
+定数名の各階層を継承探索なしで辿り、autoloadが登録されていたら解決を中止する。最後の定数が対象オブジェクトと同一であることを確認して`const_source_location`を取得し、プロジェクト内の実ファイルだけを相対パスで記録する。文字列・匿名・組み込み・削除済み・外部の対象は記録しない。キャッシュはformatterの生存期間に限定し、クラスオブジェクトの同一性をキーとする。同名クラスの再定義で別オブジェクトの結果を流用しない。同じ対象の多数のexampleでは祖先列挙と定義解決を再利用し、共通祖先の定義解決も再利用する。
+
+この補完は最初の利用時点の祖先と定数の定義位置を扱う。実行途中で同一オブジェクトへ追加された祖先、複数ファイルによる再オープンの全定義、実行されない動的依存の網羅は保証しない。静的マッピング・AR補完・全実行とのauditを引き続き併用する。
 
 ## 選択と安全側への切り替え
 
