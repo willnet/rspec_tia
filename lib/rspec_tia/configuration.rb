@@ -26,6 +26,7 @@ module RspecTia
         'commit_message_tokens' => [],
       },
       'static_mapping' => [],
+      'described_class' => { 'enabled' => true },
       'rails' => {
         'enabled' => 'auto',
         'active_record' => true,
@@ -72,6 +73,7 @@ module RspecTia
     def full_run_commit_message_tokens = dig('full_run', 'commit_message_tokens')
 
     def static_mapping_rules = @data.fetch('static_mapping')
+    def described_class_enabled? = dig('described_class', 'enabled')
 
     def ci_adapter = dig('ci', 'adapter')
     def gitlab_options = dig('ci', 'gitlab')
