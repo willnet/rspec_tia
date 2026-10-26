@@ -126,6 +126,20 @@ RSpec.describe RspecTia::Ci::Gitlab do
       end
     end
 
+    it 'map_refをクエリ文字列としてエンコードする' do
+      allow(config).to receive(:gitlab_options).and_return(
+        config.gitlab_options.merge('map_ref' => 'release/1.0+hotfix#2'),
+      )
+      with_env('CI_PROJECT_ID' => '42') do
+        expect(http).to receive(:get_json)
+          .with(a_string_including('/pipelines?ref=release%2F1.0%2Bhotfix%232&')).and_return([])
+
+        Dir.mktmpdir do |dir|
+          expect { adapter.fetch_map_fragments(dir) }.to output.to_stderr
+        end
+      end
+    end
+
     it 'マップ生成パイプラインが無ければ空を返す（予測側で全実行に倒れる）' do
       with_env('CI_PROJECT_ID' => '42') do
         allow(http).to receive(:get_json).with(a_string_including('/pipelines?')).and_return([])

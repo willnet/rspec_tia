@@ -113,12 +113,13 @@ module RspecTia
       end
 
       def latest_map_pipeline
-        query = [
-          "ref=#{options.fetch('map_ref')}",
-          'status=success',
-          "source=#{options.fetch('map_pipeline_source')}",
-          'per_page=1',
-        ].join('&')
+        # Encode values so refs containing characters such as + or # are not altered.
+        query = URI.encode_www_form(
+          ref: options.fetch('map_ref'),
+          status: 'success',
+          source: options.fetch('map_pipeline_source'),
+          per_page: 1,
+        )
         http.get_json("/projects/#{project_id}/pipelines?#{query}").first
       end
 
