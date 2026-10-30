@@ -30,7 +30,7 @@ RSpec.describe 'Rails application prediction oracle' do
     end
   end
 
-  it 'detects two independent injected bugs using only a pre-change map and assertion failures' do
+  it 'detects independent injected bugs using only a pre-change map and assertion failures' do
     RailsAppRunner.with_app(mode: :eager) do |baseline_app|
       baseline = baseline_app.run.map
       original_map = baseline.to_h

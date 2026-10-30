@@ -1,5 +1,71 @@
 # Handwritten oracle; never regenerate this file from a collected map.
 cases:
+  M9_render_boot:
+    description: Dedicated boot render checks notification attribution independently of coverage.
+    source: app/views/tracking/_boot.html.erb
+    exact_specs: []
+  M9_render_suite_before:
+    description: Dedicated suite_before render checks notification attribution independently of coverage.
+    source: app/views/tracking/_suite_before.html.erb
+    exact_specs: all
+  M9_render_suite_after:
+    description: Dedicated suite_after render checks notification attribution independently of coverage.
+    source: app/views/tracking/_suite_after.html.erb
+    exact_specs: all
+  M9_render_context_before:
+    description: Dedicated context_before render checks notification attribution independently of coverage.
+    source: app/views/tracking/_context_before.html.erb
+    exact_specs:
+      - spec/hooks/context_spec.rb
+  M9_render_context_after:
+    description: Dedicated context_after render checks notification attribution independently of coverage.
+    source: app/views/tracking/_context_after.html.erb
+    exact_specs:
+      - spec/hooks/context_spec.rb
+  M9_render_nested_before:
+    description: Dedicated nested_before render checks notification attribution independently of coverage.
+    source: app/views/tracking/_nested_before.html.erb
+    exact_specs:
+      - spec/hooks/context_spec.rb
+  M9_render_second_group:
+    description: Dedicated second_group render checks notification attribution independently of coverage.
+    source: app/views/tracking/_second_group.html.erb
+    exact_specs:
+      - spec/hooks/context_spec.rb
+  M9_render_shared:
+    description: Dedicated shared render checks notification attribution independently of coverage.
+    source: app/views/tracking/_shared.html.erb
+    exact_specs:
+      - spec/services/shared_first_spec.rb
+      - spec/services/shared_second_spec.rb
+  M8_template:
+    description: Only accounts renders this template; no static rule contributes map edges.
+    source: app/views/accounts/index.html.erb
+    exact_specs:
+      - spec/requests/accounts_spec.rb
+  M8_shared_partial:
+    description: Both requests render the same compiled partial in either execution order.
+    source: app/views/shared/_navigation.html.erb
+    exact_specs:
+      - spec/requests/accounts_spec.rb
+      - spec/requests/users_spec.rb
+  M8_cached_collection:
+    description: Collection notifications retain the partial identifier even on warm cache hits.
+    source: app/views/shared/_item.html.erb
+    exact_specs:
+      - spec/requests/accounts_spec.rb
+      - spec/requests/users_spec.rb
+  M8_layout:
+    description: Both requests use the same compiled application layout.
+    source: app/views/layouts/application.html.erb
+    exact_specs:
+      - spec/requests/accounts_spec.rb
+      - spec/requests/users_spec.rb
+  M8_partial_layout:
+    description: The per-template render notification identifies a partial layout omitted by public layout events.
+    source: app/views/shared/_frame.html.erb
+    exact_specs:
+      - spec/requests/accounts_spec.rb
   M1_shared_service:
     description: Both consumers execute the same method; no other spec calls it.
     source: app/services/shared_value.rb
