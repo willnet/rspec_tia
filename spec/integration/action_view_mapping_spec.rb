@@ -30,6 +30,26 @@ RSpec.describe 'ActionView runtime dependencies' do
     end
   end
 
+  it 'selects both consumers for changes to an internal symlink or its target without static mappings' do
+    RailsAppRunner.with_app(mode: :normal) do |app|
+      config_path = File.join(app.root, '.rspec_tia.yml')
+      config = YAML.safe_load_file(config_path).merge('static_mapping' => [])
+      File.write(config_path, YAML.dump(config))
+      target = 'app/views/shared/_navigation_target.html.erb'
+      link = 'app/views/shared/_navigation.html.erb'
+      FileUtils.mv(File.join(app.root, link), File.join(app.root, target))
+      File.symlink('_navigation_target.html.erb', File.join(app.root, link))
+      map = app.run.map
+      consumers = %w[spec/requests/accounts_spec.rb spec/requests/users_spec.rb]
+      [link, target].each do |source|
+        expect(map.specs_for(source)).to match_array(consumers)
+        prediction = app.predict(map, [source])
+        expect(prediction).not_to be_full_run
+        expect(prediction.specs).to match_array(consumers)
+      end
+    end
+  end
+
   it 'keeps coverage dependencies when rendering inline or external templates' do
     RailsAppRunner.with_app(mode: :normal) do |app|
       File.write(File.join(File.dirname(app.root), 'external.html.erb'), '<p>External</p>')

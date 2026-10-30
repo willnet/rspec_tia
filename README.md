@@ -87,7 +87,10 @@ templates. Set `rails.action_view: false` to disable this independently of
 `rails.active_record`; `rails.enabled: false` disables both. Tracking initializes
 after spec loading, so Rails can be required from `spec/rails_helper.rb`.
 
-Only existing files inside the project root are recorded. Inline templates,
+Only existing files inside the project root are recorded. For template files
+symlinked within the project, both the symlink path and its resolved target
+path are recorded, so changes to either select the consumer specs. Symlinks whose
+targets are outside the project are skipped. Inline templates,
 virtual identifiers, and files in external engines/gems are skipped. Renders in
 context hooks belong to the consumer spec, and renders in suite hooks belong to
 every recorded spec; renders during application/spec loading are discarded.

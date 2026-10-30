@@ -8,6 +8,24 @@ RSpec.describe RspecTia::ActionViewSupport do
     ActiveSupport::Notifications.instrument(event, payload.merge(identifier: identifier)) {}
   end
 
+  it 'records both an internal symlink and its target without duplicate dependencies' do
+    with_project(['app/views/_item.html.erb']) do |root|
+      target = File.join(root, 'app/views/_item.html.erb')
+      link = File.join(root, 'app/views/_alias.html.erb')
+      File.symlink('_item.html.erb', link)
+      collector = described_class.new(root: root).subscribe
+      begin
+        notify(link)
+        expect(collector.flush).to contain_exactly('app/views/_alias.html.erb', 'app/views/_item.html.erb')
+        notify(target)
+        notify(link)
+        expect(collector.flush).to contain_exactly('app/views/_alias.html.erb', 'app/views/_item.html.erb')
+      ensure
+        collector.unsubscribe
+      end
+    end
+  end
+
   it 'keeps real project files, normalizes paths, and ignores virtual, missing and external identifiers' do
     with_project(['app/views/_item.html.erb', 'app/views/_layout.html.erb']) do |root|
       collector = described_class.new(root: root).subscribe

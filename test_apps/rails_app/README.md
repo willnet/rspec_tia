@@ -94,7 +94,9 @@ mapping cases for each mode/order pair.
 rules and checks normal Rails loading, independent AR/ActionView switches, global
 Rails disablement, and prediction after map dump/load/merge. Real inline and
 external-file renders must preserve ordinary coverage edges without adding
-non-project sources. Warm fragment and collection caches explicitly demonstrate
+non-project sources. An internal template symlink checks that changes to either
+the link or its target select both request consumers without static mappings.
+Warm fragment and collection caches explicitly demonstrate
 that nested partial notifications disappear on cache hits. The primary collection
 partial remains visible. Use disabled render caching, explicit static mappings,
 or full-run paths for nested dependencies hidden by cached bodies.

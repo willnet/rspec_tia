@@ -28,8 +28,7 @@ module RspecTia
 
       EVENTS.each do |event|
         @subscriptions << ::ActiveSupport::Notifications.subscribe(event) do |*, payload|
-          path = project_file(payload[:identifier])
-          @files << path if path
+          @files.merge(project_files(payload[:identifier]))
         end
       end
       self
@@ -49,18 +48,20 @@ module RspecTia
 
     private
 
-    def project_file(identifier)
+    def project_files(identifier)
       # Layout payloads may be virtual names; only identifier contains a resolved path.
-      return unless identifier.is_a?(String) && File.absolute_path?(identifier)
+      return [] unless identifier.is_a?(String) && File.absolute_path?(identifier)
 
       path = File.expand_path(identifier)
-      return unless path.start_with?(@root) && File.file?(path)
-      return unless File.realpath(path).start_with?(@real_root)
+      return [] unless path.start_with?(@root) && File.file?(path)
+      real_path = File.realpath(path)
+      return [] unless real_path.start_with?(@real_root)
 
-      path.delete_prefix(@root)
+      # Changes to either a symlink or its target must select this render's consumer.
+      [path.delete_prefix(@root), real_path.delete_prefix(@real_root)]
     rescue ArgumentError, SystemCallError
       # Inline/virtual templates, removed files and external engines are not project files.
-      nil
+      []
     end
   end
 end
