@@ -4,6 +4,7 @@ require 'rspec/core/formatters'
 require 'set'
 require 'rspec_tia'
 require 'rspec_tia/rails_support'
+require 'rspec_tia/action_view_support'
 require 'rspec_tia/described_class_support'
 
 module RspecTia
@@ -29,14 +30,17 @@ module RspecTia
       @map = Map.new(generated_at: Time.now, commit_sha: RspecTia.commit_sha)
       @current_spec = nil
       @rails_support = nil
+      @action_view_support = nil
       @described_class_support = DescribedClassSupport.new(root: @root) if @config.described_class_enabled?
     end
 
     def start(_notification)
       @rails_support ||= build_rails_support
+      @action_view_support ||= build_action_view_support
       # Discard lines executed during boot and spec loading.
       Coverage.result(stop: false, clear: true)
       @rails_support&.flush
+      @action_view_support&.flush
     end
 
     # Group start arrives before before(:context); group finish arrives after after(:context).
@@ -67,6 +71,11 @@ module RspecTia
         warn '[rspec_tia] Test run failed; saving the generated map as stale'
       end
       @map.dump(fragment_path)
+    ensure
+      @rails_support&.unsubscribe
+      @action_view_support&.unsubscribe
+      @rails_support = nil
+      @action_view_support = nil
     end
 
     private
@@ -76,6 +85,13 @@ module RspecTia
       return nil unless RailsSupport.available?
 
       RailsSupport.new(root: @root).subscribe
+    end
+
+    def build_action_view_support
+      return nil unless @config.rails_enabled? && @config.action_view_enabled?
+      return nil unless ActionViewSupport.available?
+
+      ActionViewSupport.new(root: @root).subscribe
     end
 
     def switch_spec(spec)
@@ -102,7 +118,7 @@ module RspecTia
 
     def flush
       result = Coverage.result(stop: false, clear: true)
-      touched = @rails_support ? @rails_support.flush : []
+      touched = (@rails_support&.flush || []) + (@action_view_support&.flush || [])
       sources = project_files(result) + touched
       if @current_spec.nil?
         # Attribute before/after(:suite) dependencies to every spec, not just the first or last.

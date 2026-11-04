@@ -1,4 +1,26 @@
 cases:
+  P6_new_template:
+    description: A newly added, unrendered template still needs the static view rule.
+    added_source: app/views/accounts/new.html.erb
+    added_content: '<h1>New page</h1>'
+    changed_files:
+      - app/views/accounts/new.html.erb
+    specs:
+      - spec/requests/accounts_spec.rb
+  P5_shared_partial:
+    description: Runtime render edges select both consumers without a matching static rule.
+    changed_files:
+      - app/views/shared/_navigation.html.erb
+    specs:
+      - spec/requests/accounts_spec.rb
+      - spec/requests/users_spec.rb
+  P5_layout:
+    description: Runtime layout edges survive fragment merge and select both requests.
+    changed_files:
+      - app/views/layouts/application.html.erb
+    specs:
+      - spec/requests/accounts_spec.rb
+      - spec/requests/users_spec.rb
   P1_template:
     description: A static view rule selects the request spec independently of ERB coverage.
     changed_files:

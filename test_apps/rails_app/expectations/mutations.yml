@@ -1,4 +1,14 @@
 cases:
+  V2_shared_partial:
+    description: A broken shared partial must select both failing requests without a matching static rule.
+    source: app/views/shared/_navigation.html.erb
+    before: 'Fixture navigation'
+    after: 'Broken navigation'
+    failed_specs:
+      - spec/requests/accounts_spec.rb
+      - spec/requests/users_spec.rb
+    forbidden_specs:
+      - spec/services/unrelated_spec.rb
   V1_shared_service:
     description: Changing a shared return value breaks both consumers while unrelated specs stay unselected.
     source: app/services/shared_value.rb

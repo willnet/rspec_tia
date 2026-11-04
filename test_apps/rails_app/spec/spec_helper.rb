@@ -6,11 +6,15 @@ Account
 Account.columns
 require 'rack/mock'
 require_relative 'support/shared_examples'
+# Boot renders must be discarded just like boot coverage.
+AccountsController.render(partial: 'tracking/boot')
 
 RSpec.configure do |config|
   config.disable_monkey_patching!
   config.before(:suite) { SuiteBefore.call }
   config.after(:suite) { SuiteAfter.call }
+  config.before(:suite) { AccountsController.render(partial: 'tracking/suite_before') }
+  config.after(:suite) { AccountsController.render(partial: 'tracking/suite_after') }
   config.before do
     # Raw SQL deliberately avoids attributing the model to unrelated specs during data reset.
     connection = ActiveRecord::Base.connection

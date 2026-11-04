@@ -30,6 +30,7 @@ module RspecTia
       'rails' => {
         'enabled' => 'auto',
         'active_record' => true,
+        'action_view' => true,
       },
       'ci' => {
         'adapter' => 'auto',
@@ -79,6 +80,7 @@ module RspecTia
     def gitlab_options = dig('ci', 'gitlab')
 
     def active_record_enabled? = dig('rails', 'active_record')
+    def action_view_enabled? = dig('rails', 'action_view')
 
     # In auto mode, enable support when Rails is loaded.
     # Enable eager-load handling and model dependency supplementation by default to avoid silently losing accuracy.

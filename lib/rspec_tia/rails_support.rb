@@ -28,16 +28,25 @@ module RspecTia
       @root = root.end_with?('/') ? root : "#{root}/"
       @files = Set.new
       @source_location_cache = {}
+      @subscriptions = []
     end
 
     def subscribe
-      ::ActiveSupport::Notifications.subscribe(INSTANTIATION_EVENT) do |*, payload|
+      return self unless @subscriptions.empty?
+
+      @subscriptions << ::ActiveSupport::Notifications.subscribe(INSTANTIATION_EVENT) do |*, payload|
         record(payload[:class_name])
       end
-      ::ActiveSupport::Notifications.subscribe(SQL_EVENT) do |*, payload|
+      @subscriptions << ::ActiveSupport::Notifications.subscribe(SQL_EVENT) do |*, payload|
         record(payload[:name].to_s.split(' ').first)
       end
       self
+    end
+
+    def unsubscribe
+      @subscriptions.each { |token| ::ActiveSupport::Notifications.unsubscribe(token) }
+      @subscriptions.clear
+      @files.clear
     end
 
     # Return files touched since the previous flush and reset the accumulated set.

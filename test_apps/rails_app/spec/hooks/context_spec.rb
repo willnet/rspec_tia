@@ -1,11 +1,14 @@
 RSpec.describe 'context hooks' do
   before(:context) { @before_value = ContextBefore.call }
+  before(:context) { AccountsController.render(partial: 'tracking/context_before') }
+  after(:context) { AccountsController.render(partial: 'tracking/context_after') }
   after(:context) { expect(ContextAfter.call).to eq('context after') }
 
   it('uses before context') { expect(@before_value).to eq('context before') }
 
   context 'nested context' do
     before(:context) { @nested_value = NestedBefore.call }
+    before(:context) { AccountsController.render(partial: 'tracking/nested_before') }
     after(:context) { expect(NestedAfter.call).to eq('nested after') }
     it('uses nested before context') { expect(@nested_value).to eq('nested before') }
   end
@@ -18,6 +21,7 @@ RSpec.describe 'context hooks' do
 end
 
 RSpec.describe 'another top-level group in the same file' do
+  before(:context) { AccountsController.render(partial: 'tracking/second_group') }
   before(:context) { @value = SecondGroupValue.call }
   it('retains the second group dependency') { expect(@value).to eq('second group') }
 end

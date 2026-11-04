@@ -64,7 +64,7 @@ RSpec.describe 'specロード後のRails依存補完' do
   it 'Formatter生成時は購読せず、startが繰り返されても一度だけ購読する' do
     require 'rspec_tia/formatter'
     support = instance_double(RspecTia::RailsSupport, flush: [])
-    config = RspecTia::Configuration.new({ 'rails' => { 'enabled' => true } })
+    config = RspecTia::Configuration.new({ 'rails' => { 'enabled' => true, 'action_view' => false } })
     allow(RspecTia).to receive(:config).and_return(config)
     allow(RspecTia::RailsSupport).to receive(:available?).and_return(true)
     allow(Coverage).to receive(:result)
